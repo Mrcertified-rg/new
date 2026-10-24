@@ -1,4 +1,4 @@
-# MR CERTIFIED (prototype)
+# MERQO Stores
 
 Social-commerce prototype: TikTok-style buyer feed, certified sellers, marketers, business records, Certified AI (mock).
 
