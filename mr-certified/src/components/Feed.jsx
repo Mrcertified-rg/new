@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 
-export default function Feed({go,catFilter,setCatFilter}){
+export default function Feed({go,catFilter,setCatFilter,cartCount}){
  const cats=['For You','Shoes','Men','Women','Kids','Beauty','Accessories','Services'];
  const list=PRODUCTS.filter(p=>catFilter==='For You'||p.cat===catFilter);
  return (
@@ -28,6 +28,8 @@ export default function Feed({go,catFilter,setCatFilter}){
        <button><span className="ic">❤️</span>Like</button>
        <button><span className="ic">💬</span>Comment</button>
        <button><span className="ic">🔗</span>Share</button>
+       <button><span className="ic">🔗</span>Share</button>
+        <button onClick={()=>go('dm',{pid:p.id})}><span className="ic">✉️</span>DM</button>
        <button onClick={()=>go('product',{pid:p.id})}><span className="ic">🛒</span>Buy</button>
       </div>
      </div>

@@ -18,6 +18,9 @@ import MarketerFeed from './components/MarketerFeed.jsx';
 import MyPromotions from './components/MyPromotions.jsx';
 import BuyModal from './components/BuyModal.jsx';
 import CreateModal from './components/CreateModal.jsx';
+import Cart from './components/cart.jsx';
+import Dm from './components/DM.jsx';
+import SellerInbox from './components/Sellersindox.jsx';
 
 export default function App(){
  const [mode,setModeRaw]=useState(null);
@@ -31,6 +34,9 @@ export default function App(){
  const [storeTheme,setStoreTheme]=useState('#E7B84E');
  const [transactions,setTransactions]=useState(INIT_TX);
  const [promotedTag,setPromotedTag]=useState(null);
+ const [cart,setCart]=useState([]);
+ const [dms,setDms]=useState({});
+ const [toast,setToast]=useState(null);
 
  const go=(scr,extra)=>{
   setScreen(scr);
@@ -48,20 +54,39 @@ export default function App(){
  };
  const addTx=t=>setTransactions([t,...transactions]);
  const promote=productId=>{ setPromotedTag({productId,marketerName:sellerAccount?sellerAccount.name:'you'}); go('mypromos'); };
+ const showToast=m=>{ setToast(m); setTimeout(()=>setToast(null),1500); };
+ const addToCart=(productId,size)=>{
+ const i=cart.findIndex(c=>c.pid===productId&&c.size===size);
+ if(i>=0) setCart(cart.map((c,k)=>k===i?{...c,qty:c.qty+1}:c));
+ else setCart([...cart,{pid:productId,size,qty:1}]);
+ showToast('Added to cart');
+ };
+ const setQty=(i,d)=>setCart(cart.map((c,k)=>k===i?{...c,qty:Math.max(1,c.qty+d)}:c));
+ const removeItem=i=>setCart(cart.filter((c,k)=>k!==i));
+ const cartCount=cart.reduce((s,c)=>s+c.qty,0);
+ const cartTotal=cart.reduce((s,c)=>s+PRODUCTS.find(x=>x.id===c.pid).price*c.qty,0);
+ const sendDm=(productId,from,text)=>{
+ setDms(d=>({...d,[productId]:[...(d[productId]||[]),{from,text}]}));
+ if(from==='buyer') setTimeout(()=>setDms(d=>({...d,[productId]:[...(d[productId]||[]),{from:'seller',text:'Hi! Thanks for your message - yes, this is available. Which size do you need?'}]})),900);
+ };
+ const threads=Object.keys(dms).filter(k=>dms[k].length).length;
  const openModal=type=>setModal(type);
  const closeModal=()=>setModal(null);
 
  let body=null;
  if(screen==='welcome') body=<Welcome setMode={setMode}/>;
  else if(screen==='sellercreate') body=<SellerCreate onCreate={createAccount}/>;
- else if(screen==='feed') body=<React.Fragment><Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
+ else if(screen==='feed') body=<React.Fragment><Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='mfeed') body=<React.Fragment><MarketerFeed go={go} promotedTag={promotedTag}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='mypromos') body=<React.Fragment><MyPromotions promotedTag={promotedTag} go={go}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
- else if(screen==='product') body=<ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote}/>;
+ else if(screen==='product') body=<ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart}/>;
+ else if(screen==='cart') body=<React.Fragment><Cart cart={cart} setQty={setQty} removeItem={removeItem} go={go} openModal={openModal}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
+ else if(screen==='dm') body=<Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode==='seller'?'seller':'buyer'}/>;
+ else if(screen==='inbox') body=<React.Fragment><SellerInbox dms={dms} go={go}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='sellerprofile') body=<React.Fragment><SellerProfile pid={pid} go={go} tab={tab} setTab={setTab}/><NavBar mode={mode} screen={'feed'} go={go}/></React.Fragment>;
  else if(screen==='orders') body=<React.Fragment><Orders/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='buyerprofile') body=<React.Fragment><BuyerProfile setMode={setMode}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
- else if(screen==='dash') body=<React.Fragment><Dashboard go={go} setMode={setMode}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
+ else if(screen==='dash') body=<React.Fragment><Dashboard go={go} setMode={setMode} threads={threads}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='sellerproducts') body=<React.Fragment><SellerProducts openModal={openModal}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='records') body=<React.Fragment><Records transactions={transactions} addTx={addTx}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='marketing') body=<React.Fragment><Marketing/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
@@ -72,7 +97,9 @@ export default function App(){
   <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
    {body}
    {modal==='buy' && <BuyModal pid={pid} sizeSel={sizeSel||(PRODUCTS.find(p=>p.id===pid)||{}).sizes?.[0]} close={closeModal} go={go}/>}
+   {modal==='checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - '+cartCount+' item(s)'} amount={cartTotal} onDone={()=>setCart([])} close={closeModal} go={go}/>}
    {modal==='create' && <CreateModal close={closeModal}/>}
+   {toast && <div className="toast">{toast}</div>}
   </div>
  );
 }

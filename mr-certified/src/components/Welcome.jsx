@@ -3,8 +3,12 @@ import React, { useState } from 'react';
 export default function Welcome({setMode}){
  return (
   <div className="onboard">
-   <div>
-    <div className="brand">MR <span>CERTIFIED</span></div>
+   <div className="welcome-brand-block">
+    <div className="welcome-brand">
+     <span className="welcome-mark" aria-hidden="true">M</span>
+     <span className="welcome-wordmark">MERQO<span className="welcome-period">.</span></span>
+    </div>
+    <p className="welcome-eyebrow">TRUSTED COMMERCE, REIMAGINED</p>
     <p className="tag">Turn products and skills into a trusted business — discover, buy, sell, grow.</p>
    </div>
    <div className="choice">

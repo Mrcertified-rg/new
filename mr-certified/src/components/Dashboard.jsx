@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DASH, money } from '../data.js';
 
-export default function Dashboard({go,setMode}){
+export default function Dashboard({go,setMode,threads}){
  return (
   <React.Fragment>
    <div className="topbar"><h1>Dashboard</h1><span className="badge">✓ CERTIFIED</span></div>
@@ -17,6 +17,10 @@ export default function Dashboard({go,setMode}){
      <div className="bars">{DASH.bars.map((b,i)=><div className="bar" key={i} style={{height:b+'%'}}></div>)}</div>
     </div>
     <div className="card" onClick={()=>go('ai')}>
+    <div className="card" onClick={()=>go('inbox')}>
+    <div className="row"><b>✉️ Messages</b><span className="pill">{threads} chats ›</span></div>
+    <p style={{color:'var(--sub)',fontSize:13,marginTop:4}}>Buyers message you straight from your posts.</p>
+    </div>
      <div className="row"><b>✦ Certified AI</b><span className="pill">Ask ›</span></div>
      <p style={{color:'var(--sub)',fontSize:13,marginTop:4}}>"Which product made me the most profit this month?"</p>
     </div>
