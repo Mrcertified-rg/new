@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export default function NavBar({mode,screen,go}){
- const buyer=[['feed','🏠','Home'],['cart','🛒','Cart'],['orders','🧾','Orders'],['buyerprofile','👤','Profile']];
+ const buyer=[['feed','🏠','Home'],['orders','🚚','Track orders'],['buyerprofile','👤','Profile']];
  const seller=[['dash','📊','Dashboard'],['sellerproducts','🏷️','Products'],['records','📒','Records'],['marketing','📢','Marketing'],['ai','✦','AI'],['sellerprofilepage','👤','Profile']];
  const marketer=[['mfeed','🧭','Discover'],['mypromos','🔗','Promotions'],['sellerprofilepage','👤','Profile']];
  const items=mode==='seller'?seller:(mode==='marketer'?marketer:buyer);

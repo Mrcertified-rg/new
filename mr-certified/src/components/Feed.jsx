@@ -92,7 +92,7 @@ const FilterSelect = ({ label, value, onChange, children }) => (
   </label>
 );
 
-export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', setMode, hasSellerAccount = false }) {
+export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', setMode, hasSellerAccount = false, addToCart }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('featured');
   const [showSug, setShowSug] = useState(false);
@@ -227,12 +227,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <button type="button" className="menu-item" onClick={() => { close(); go('buyerprofile'); }}>
                 <UserIcon size={17} /><span>My profile</span>
               </button>
-              <button type="button" className="menu-item" onClick={() => { close(); go('orders'); }}>
+              <button type="button" className="menu-item" onClick={() => { close(); go('myorders'); }}>
                 <PackageIcon size={17} /><span>My orders</span>
-              </button>
-              <button type="button" className="menu-item" onClick={() => { close(); go('cart'); }}>
-                <CartIcon size={17} /><span>Cart</span>
-                {cartCount > 0 && <span className="menu-count">{cartCount}</span>}
               </button>
               <div className="menu-sep" />
               <div className="menu-label">SWITCH MODE</div>
@@ -379,7 +375,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <button><span className="ic">💬</span>Comment</button>
               <button><span className="ic">🔗</span>Share</button>
               <button onClick={() => go('dm', { pid: product.id })}><span className="ic">✉️</span>DM</button>
-              <button onClick={() => go('product', { pid: product.id })}><span className="ic">🛒</span>Buy</button>
+              <button onClick={() => addToCart(product.id, product.sizes[0])} style={{ textAlign: 'center', lineHeight: 1.15 }}><span className="ic">🛒</span>Add to<br />cart</button>
             </div>
           </div>
         ))}

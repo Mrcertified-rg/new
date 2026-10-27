@@ -27,6 +27,6 @@ export const INIT_TX =[
 ];
 export const ORDER_STAGES =['Placed','Packed','Shipped','Out for delivery','Delivered'];
 export const ORDERS =[
- {id:1,name:'Nike Air Force 1',seller:'Urban Kicks Kenya',stage:4},
- {id:2,name:'Shea Glow Set',seller:'Amara Beauty',stage:2},
+ {id:1,pid:1,size:42,qty:1,date:'20 Sep',stage:4},
+ {id:2,pid:4,size:'1 set',qty:2,date:'24 Sep',stage:2},
 ];

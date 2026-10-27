@@ -29,7 +29,7 @@ export default function BuyModal({pid,sizeSel,close,go,label,amount,onDone}){
     {step===2 && <button className="btn" style={{width:'100%'}} onClick={()=>setStep(3)}>I received my order</button>}
     {step===3 && <React.Fragment>
       <p style={{textAlign:'center',color:'var(--green)',fontWeight:600,margin:'6px 0'}}>Payment released. Thanks — leave the seller a review!</p>
-      <button className="btn" style={{width:'100%'}} onClick={()=>{close();if(onDone)onDone();go('feed');}}>Done</button>
+      <button className="btn" style={{width:'100%'}} onClick={()=>{close();if(onDone)onDone();go(onDone?'orders':'feed');}}>Done</button>
      </React.Fragment>}
    </div>
   </div>

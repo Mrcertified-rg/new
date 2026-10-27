@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 
-export default function ProductDetail({pid,go,sizeSel,setSizeSel,openModal,mode,promotedTag,onPromote,addToCart}){
+export default function ProductDetail({pid,go,sizeSel,setSizeSel,mode,promotedTag,onPromote,addToCart}){
  const p=PRODUCTS.find(x=>x.id===pid);
  const sel=sizeSel||p.sizes[0];
  const tagged=promotedTag&&promotedTag.productId===pid;
@@ -44,9 +44,8 @@ export default function ProductDetail({pid,go,sizeSel,setSizeSel,openModal,mode,
     </div>
    ) : (
     <div className="buybar">
-     <button className="btn ghost" style={{flex:1.4}} onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart</button>
      <button className="btn ghost" style={{flex:1}} onClick={()=>go('feed')}>❤️ Save</button>
-     <button className="btn green" style={{flex:2}} onClick={()=>openModal('buy')}>Buy — {money(p.price)}</button>
+     <button className="btn green" style={{flex:2}} onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart — {money(p.price)}</button>
     </div>
    )}
   </div>

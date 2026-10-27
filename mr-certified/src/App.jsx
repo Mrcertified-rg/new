@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { PRODUCTS, INIT_TX } from './data.js';
+import { PRODUCTS, INIT_TX, ORDERS } from './data.js';
 import NavBar from './components/NavBar.jsx';
 import Feed from './components/Feed.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
 import SellerProfile from './components/SellerProfile.jsx';
 import Orders from './components/Orders.jsx';
+import MyOrders from './components/MyOrders.jsx';
 import BuyerProfile from './components/BuyerProfile.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import SellerProducts from './components/SellerProducts.jsx';
@@ -18,6 +19,7 @@ import MyPromotions from './components/MyPromotions.jsx';
 import BuyModal from './components/BuyModal.jsx';
 import CreateModal from './components/CreateModal.jsx';
 import Cart from './components/cart.jsx';
+import PlaceOrderModal from './components/PlaceOrderModal.jsx';
 import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
 import { ArrowLeftIcon } from './components/Icons.jsx';
@@ -33,6 +35,7 @@ export default function App(){
  const [sellerAccount,setSellerAccount]=useState(null);
  const [storeTheme,setStoreTheme]=useState('#E7B84E');
  const [transactions,setTransactions]=useState(INIT_TX);
+ const [orders,setOrders]=useState(ORDERS);
  const [promotedTag,setPromotedTag]=useState(null);
  const [cart,setCart]=useState([]);
  const [dms,setDms]=useState({});
@@ -65,8 +68,12 @@ export default function App(){
  };
  const setQty=(i,d)=>setCart(cart.map((c,k)=>k===i?{...c,qty:Math.max(1,c.qty+d)}:c));
  const removeItem=i=>setCart(cart.filter((c,k)=>k!==i));
+ const placeOrder=sel=>{
+  const made=sel.map(s=>{ const c=cart[s.i]; return {id:Date.now()+s.i,pid:c.pid,size:c.size,qty:s.qty,date:'Today',stage:0}; });
+  setOrders(current=>[...made,...current]);
+  setCart(current=>current.filter((c,k)=>!sel.some(s=>s.i===k)));
+ };
  const cartCount=cart.reduce((s,c)=>s+c.qty,0);
- const cartTotal=cart.reduce((s,c)=>s+PRODUCTS.find(x=>x.id===c.pid).price*c.qty,0);
  const sendDm=(productId,from,text)=>{
  setDms(d=>({...d,[productId]:[...(d[productId]||[]),{from,text}]}));
  if(from==='buyer') setTimeout(()=>setDms(d=>({...d,[productId]:[...(d[productId]||[]),{from:'seller',text:'Hi! Thanks for your message - yes, this is available. Which size do you need?'}]})),900);
@@ -80,15 +87,16 @@ export default function App(){
    <div className="topbar"><button type="button" className="icon-btn" onClick={()=>{setModeRaw('buyer');setScreen('feed');}} aria-label="Back to marketplace"><ArrowLeftIcon size={19}/></button><span className="pill">Back to marketplace</span></div>
    <SellerCreate onCreate={createAccount}/>
   </React.Fragment>;
- else if(screen==='feed') body=<Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} setMode={setMode} hasSellerAccount={!!sellerAccount}/>;
+ else if(screen==='feed') body=<Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} addToCart={addToCart} mode={mode} setMode={setMode} hasSellerAccount={!!sellerAccount}/>;
  else if(screen==='mfeed') body=<React.Fragment><MarketerFeed go={go} promotedTag={promotedTag}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='mypromos') body=<React.Fragment><MyPromotions promotedTag={promotedTag} go={go}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
- else if(screen==='product') body=<ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart}/>;
+ else if(screen==='product') body=<ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart}/>;
  else if(screen==='cart') body=<React.Fragment><Cart cart={cart} setQty={setQty} removeItem={removeItem} go={go} openModal={openModal}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='dm') body=<Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode==='seller'?'seller':'buyer'}/>;
  else if(screen==='inbox') body=<React.Fragment><SellerInbox dms={dms} go={go}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='sellerprofile') body=<React.Fragment><SellerProfile pid={pid} go={go} tab={tab} setTab={setTab}/><NavBar mode={mode} screen={'feed'} go={go}/></React.Fragment>;
- else if(screen==='orders') body=<React.Fragment><Orders/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
+ else if(screen==='orders') body=<React.Fragment><Orders orders={orders}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
+ else if(screen==='myorders') body=<React.Fragment><MyOrders orders={orders} go={go}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='buyerprofile') body=<React.Fragment><BuyerProfile setMode={setMode}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='dash') body=<React.Fragment><Dashboard go={go} setMode={setMode} threads={threads}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='sellerproducts') body=<React.Fragment><SellerProducts openModal={openModal}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
@@ -101,7 +109,7 @@ export default function App(){
   <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
    {body}
    {modal==='buy' && <BuyModal pid={pid} sizeSel={sizeSel||(PRODUCTS.find(p=>p.id===pid)||{}).sizes?.[0]} close={closeModal} go={go}/>}
-   {modal==='checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - '+cartCount+' item(s)'} amount={cartTotal} onDone={()=>setCart([])} close={closeModal} go={go}/>}
+   {modal==='checkout' && <PlaceOrderModal cart={cart} close={closeModal} go={go} onPlaced={placeOrder}/>}
    {modal==='create' && <CreateModal close={closeModal}/>}
    {toast && <div className="toast">{toast}</div>}
   </div>
