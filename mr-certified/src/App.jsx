@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { PRODUCTS, INIT_TX } from './data.js';
-import Welcome from './components/Welcome.jsx';
 import NavBar from './components/NavBar.jsx';
 import Feed from './components/Feed.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
@@ -21,10 +20,11 @@ import CreateModal from './components/CreateModal.jsx';
 import Cart from './components/cart.jsx';
 import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
+import { ArrowLeftIcon } from './components/Icons.jsx';
 
 export default function App(){
- const [mode,setModeRaw]=useState(null);
- const [screen,setScreen]=useState('welcome');
+ const [mode,setModeRaw]=useState('buyer');
+ const [screen,setScreen]=useState('feed');
  const [pid,setPid]=useState(null);
  const [tab,setTab]=useState('Products');
  const [catFilter,setCatFilter]=useState('For You');
@@ -39,9 +39,11 @@ export default function App(){
  const [toast,setToast]=useState(null);
 
  const go=(scr,extra)=>{
+  if(scr==='welcome'||scr==='register'){ setModeRaw('buyer'); setScreen('feed'); return; }
   setScreen(scr);
   if(extra && 'pid' in extra){ setPid(extra.pid); setSizeSel(null); }
  };
+
  const setMode=m=>{
   if((m==='seller'||m==='marketer') && !sellerAccount){ setScreen('sellercreate'); return; }
   setModeRaw(m);
@@ -74,9 +76,11 @@ export default function App(){
  const closeModal=()=>setModal(null);
 
  let body=null;
- if(screen==='welcome') body=<Welcome setMode={setMode}/>;
- else if(screen==='sellercreate') body=<SellerCreate onCreate={createAccount}/>;
- else if(screen==='feed') body=<React.Fragment><Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
+ if(screen==='sellercreate') body=<React.Fragment>
+   <div className="topbar"><button type="button" className="icon-btn" onClick={()=>{setModeRaw('buyer');setScreen('feed');}} aria-label="Back to marketplace"><ArrowLeftIcon size={19}/></button><span className="pill">Back to marketplace</span></div>
+   <SellerCreate onCreate={createAccount}/>
+  </React.Fragment>;
+ else if(screen==='feed') body=<Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} setMode={setMode} hasSellerAccount={!!sellerAccount}/>;
  else if(screen==='mfeed') body=<React.Fragment><MarketerFeed go={go} promotedTag={promotedTag}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='mypromos') body=<React.Fragment><MyPromotions promotedTag={promotedTag} go={go}/><NavBar mode={mode} screen={screen} go={go}/></React.Fragment>;
  else if(screen==='product') body=<ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart}/>;
