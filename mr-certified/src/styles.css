@@ -140,7 +140,7 @@ a{color:inherit;}
 .toggle-pill span.on{background:var(--ink);color:#101214;}
 .ledger-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
 .ledger-row:last-child{border-bottom:none;}
-.ledger-row .neg{color:var(--red);}
+.ledger-row .neg{color:var(--red);}/*red*/
 .ledger-row .pos{color:var(--green);}
 .tag-marketer{display:inline-block;font-size:11px;color:var(--sub);background:var(--panel2);border-radius:20px;padding:3px 9px;margin-top:6px;}
 .verify-row{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 0;}
