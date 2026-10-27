@@ -1,11 +1,12 @@
 import React, { useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
-import Popover, { useOutside } from './Popover.jsx';
+import Popover, { useOutside } from './ui/Popover.jsx';
+import AccountMenu from './layout/AccountMenu.jsx';
+import { useAuth } from '../auth/AuthContext.jsx';
 import {
   SearchIcon, SlidersIcon, ChevronDownIcon, CheckIcon, CloseIcon, BellIcon, CartIcon,
-  UserIcon, PackageIcon, StoreIcon, MegaphoneIcon, BagIcon, StarIcon,
-  TagIcon, ResetIcon, FlameIcon,
-} from './Icons.jsx';
+  PackageIcon, StarIcon, TagIcon, ResetIcon, FlameIcon,
+} from './ui/Icons.jsx';
 
 /* ---------- search helpers ---------- */
 const SEARCH_STOP_WORDS = new Set(['a', 'an', 'the', 'for', 'and', 'with', 'in', 'on', 'by', 'size', 'sizes', 'color', 'colour']);
@@ -76,12 +77,6 @@ const ALL_CITIES = [...new Set(PRODUCTS.map(p => p.city))].sort();
 const ALL_SIZES = [...new Set(PRODUCTS.flatMap(p => (p.sizes || []).map(String)))];
 const ALL_COLORS = [...new Set(PRODUCTS.flatMap(p => p.colors || []))].sort();
 
-const MODES = [
-  { id: 'buyer',    label: 'Buyer',    icon: BagIcon,       sub: 'Browse and shop' },
-  { id: 'seller',   label: 'Seller',   icon: StoreIcon,     sub: 'Run your store' },
-  { id: 'marketer', label: 'Marketer', icon: MegaphoneIcon, sub: 'Promote and earn' },
-];
-
 const FilterSelect = ({ label, value, onChange, children }) => (
   <label className="ffield">
     <span>{label}</span>
@@ -92,7 +87,9 @@ const FilterSelect = ({ label, value, onChange, children }) => (
   </label>
 );
 
-export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', setMode, hasSellerAccount = false, addToCart }) {
+export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode }) {
+  const { requireAuth } = useAuth();
+  const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('featured');
   const [showSug, setShowSug] = useState(false);
@@ -148,11 +145,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const currentSort = SORTS.find(s => s.id === sort) || SORTS[0];
   const SortCurrentIcon = currentSort.icon;
 
-  const pickMode = (id, close) => {
-    close();
-    if (id !== mode && setMode) setMode(id);
-  };
-
   return (
     <React.Fragment>
       {/* ---------- top bar: search + filters + actions ---------- */}
@@ -207,48 +199,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
         </button>
 
-        <Popover
-          trigger={({ open, toggle }) => (
-            <button type="button" className={'icon-btn avatar-btn' + (open ? ' on' : '')} onClick={toggle} aria-label="Account menu" aria-expanded={open}>
-              <UserIcon size={19} />
-            </button>
-          )}
-        >
-          {({ close }) => (
-            <React.Fragment>
-              <div className="menu-head">
-                <span className="menu-avatar"><UserIcon size={18} /></span>
-                <div>
-                  <b>Browsing as {(MODES.find(m => m.id === mode) || MODES[0]).label}</b>
-                  <span>Demo session · no sign-in needed</span>
-                </div>
-              </div>
-              <div className="menu-sep" />
-              <button type="button" className="menu-item" onClick={() => { close(); go('buyerprofile'); }}>
-                <UserIcon size={17} /><span>My profile</span>
-              </button>
-              <button type="button" className="menu-item" onClick={() => { close(); go('myorders'); }}>
-                <PackageIcon size={17} /><span>My orders</span>
-              </button>
-              <div className="menu-sep" />
-              <div className="menu-label">SWITCH MODE</div>
-              {MODES.map(m => {
-                const Ico = m.icon;
-                const needsSetup = m.id !== 'buyer' && !hasSellerAccount;
-                return (
-                  <button type="button" key={m.id} className={'menu-item' + (m.id === mode ? ' on' : '')} onClick={() => pickMode(m.id, close)}>
-                    <Ico size={17} />
-                    <span>
-                      {m.label}
-                      <small className="mi-sub">{needsSetup ? 'Quick setup · ' + m.sub : m.sub}</small>
-                    </span>
-                    {m.id === mode && <CheckIcon size={16} className="mi-check" />}
-                  </button>
-                );
-              })}
-            </React.Fragment>
-          )}
-        </Popover>
+        <AccountMenu go={go} mode={mode} onSwitchMode={onSwitchMode} cartCount={cartCount} />
 
         {showSug && suggestions.length > 0 && (
           <div className="search-suggestions" role="listbox">
@@ -371,11 +322,11 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <div className="meta-line">⭐ {product.rating} · {product.orders} completed orders · {product.city}</div>
             </div>
             <div className="side-actions" onClick={event => event.stopPropagation()}>
-              <button><span className="ic">❤️</span>Like</button>
-              <button><span className="ic">💬</span>Comment</button>
+              <button onClick={() => requireAuth('save products', () => setLiked(l => (l.includes(product.id) ? l.filter(x => x !== product.id) : [...l, product.id])))}><span className="ic">{liked.includes(product.id) ? '❤️' : '🤍'}</span>{liked.includes(product.id) ? 'Saved' : 'Like'}</button>
+              <button onClick={() => requireAuth('comment', () => {})}><span className="ic">💬</span>Comment</button>
               <button><span className="ic">🔗</span>Share</button>
               <button onClick={() => go('dm', { pid: product.id })}><span className="ic">✉️</span>DM</button>
-              <button onClick={() => addToCart(product.id, product.sizes[0])} style={{ textAlign: 'center', lineHeight: 1.15 }}><span className="ic">🛒</span>Add to<br />cart</button>
+              <button onClick={() => go('product', { pid: product.id })}><span className="ic">🛒</span>Buy</button>
             </div>
           </div>
         ))}

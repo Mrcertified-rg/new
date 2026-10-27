@@ -1,6 +1,6 @@
 import React from 'react';
 import { PRODUCTS, ORDER_STAGES, money } from '../data.js';
-import { ArrowLeftIcon } from './Icons.jsx';
+import { ArrowLeftIcon } from './ui/Icons.jsx';
 
 export default function MyOrders({orders,go}){
  return (
