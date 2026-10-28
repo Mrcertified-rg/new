@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PRODUCTS, INIT_TX } from './data.js';
+import { PRODUCTS, INIT_TX, ORDERS } from './data.js';
 import Feed from './components/Feed.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
 import SellerProfile from './components/SellerProfile.jsx';
@@ -62,6 +62,7 @@ function AppInner() {
   const [transactions, setTransactions] = useState(INIT_TX);
   const [promotedTag, setPromotedTag] = useState(null);
   const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState(ORDERS);
   const [dms, setDms] = useState({});
   const [toast, setToast] = useState(null);
 
@@ -164,14 +165,25 @@ function AppInner() {
     setCart((c) => {
       const i = c.findIndex((x) => x.pid === productId && x.size === size);
       if (i >= 0) return c.map((x, k) => (k === i ? { ...x, qty: x.qty + 1 } : x));
-      return [...c, { pid: productId, size, qty: 1 }];
+      return [...c, { pid: productId, size, qty: 1, checked: true }];
     });
     showToast('Added to cart');
   });
   const setQty = (i, d) => setCart(cart.map((c, k) => (k === i ? { ...c, qty: Math.max(1, c.qty + d) } : c)));
   const removeItem = (i) => setCart(cart.filter((c, k) => k !== i));
+  // MC - selected cart items and order placement
+  const toggleItem = (i) => setCart(cart.map((c, k) => (k === i ? { ...c, checked: !c.checked } : c)));
+  const toggleAll = (checked) => setCart(cart.map((c) => ({ ...c, checked })));
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
-  const cartTotal = cart.reduce((s, c) => s + PRODUCTS.find((x) => x.id === c.pid).price * c.qty, 0);
+  const selectedItems = cart.filter((c) => c.checked);
+  const selectedCount = selectedItems.reduce((s, c) => s + c.qty, 0);
+  const selectedTotal = selectedItems.reduce((s, c) => s + PRODUCTS.find((x) => x.id === c.pid).price * c.qty, 0);
+  const placeSelectedOrders = () => {
+    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const newOrders = selectedItems.map((c, n) => ({ id: Date.now() + n, pid: c.pid, size: c.size, qty: c.qty, date, stage: 0 }));
+    setOrders((o) => [...newOrders, ...o]);
+    setCart((c) => c.filter((x) => !x.checked));
+  };
 
   const sendDm = (productId, from, text) => {
     setDms((d) => ({ ...d, [productId]: [...(d[productId] || []), { from, text }] }));
@@ -217,15 +229,16 @@ function AppInner() {
       <SellerCreate onCreate={createAccount} />
     </React.Fragment>
   );
-  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} />;
+  // MC - cart actions and order tracking
+  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} />;
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
   else if (screen === 'product') body = <ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} />;
-  else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} go={go} openModal={openModal} />);
+  else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} toggleItem={toggleItem} toggleAll={toggleAll} go={go} openModal={openModal} />);
   else if (screen === 'dm') body = <Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />;
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} />);
-  else if (screen === 'orders') body = withBar(<Orders />);
+  else if (screen === 'orders') body = withBar(<Orders orders={orders} />);
   else if (screen === 'buyerprofile') body = withBar(<BuyerProfile setMode={switchMode} />);
   else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} />);
@@ -238,7 +251,8 @@ function AppInner() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {body}
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
-      {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + cartCount + ' item(s)'} amount={cartTotal} onDone={() => setCart([])} close={closeModal} go={go} />}
+      {/* MC - checkout uses selected cart total and saves the placed order */}
+      {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}
       {modal === 'create' && <CreateModal close={closeModal} />}
       {toast && <div className="toast">{toast}</div>}
     </div>

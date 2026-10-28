@@ -87,7 +87,7 @@ const FilterSelect = ({ label, value, onChange, children }) => (
   </label>
 );
 
-export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode }) {
+export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart }) {
   const { requireAuth } = useAuth();
   const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
   const [query, setQuery] = useState('');
@@ -321,12 +321,13 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <div className="price">{money(product.price)}</div>
               <div className="meta-line">⭐ {product.rating} · {product.orders} completed orders · {product.city}</div>
             </div>
+            {/* MC - add products directly to the cart */}
             <div className="side-actions" onClick={event => event.stopPropagation()}>
               <button onClick={() => requireAuth('save products', () => setLiked(l => (l.includes(product.id) ? l.filter(x => x !== product.id) : [...l, product.id])))}><span className="ic">{liked.includes(product.id) ? '❤️' : '🤍'}</span>{liked.includes(product.id) ? 'Saved' : 'Like'}</button>
               <button onClick={() => requireAuth('comment', () => {})}><span className="ic">💬</span>Comment</button>
               <button><span className="ic">🔗</span>Share</button>
               <button onClick={() => go('dm', { pid: product.id })}><span className="ic">✉️</span>DM</button>
-              <button onClick={() => go('product', { pid: product.id })}><span className="ic">🛒</span>Buy</button>
+              <button onClick={() => addToCart(product.id, product.sizes[0])}><span className="ic">🛒</span>Add to cart</button>
             </div>
           </div>
         ))}
