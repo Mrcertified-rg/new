@@ -251,8 +251,8 @@ function AppInner() {
   };
 
   const sendDm = (productId, from, text) => {
-    setDms((d) => ({ ...d, [productId]: [...(d[productId] || []), { from, text }] }));
-    if (from === 'buyer') setTimeout(() => setDms((d) => ({ ...d, [productId]: [...(d[productId] || []), { from: 'seller', text: 'Hi! Thanks for your message - yes, this is available. Which size do you need?' }] })), 900);
+    setDms((d) => ({ ...d, [productId]: [...(d[productId] || []), { from, text, time: Date.now() }] }));
+    if (from === 'buyer') setTimeout(() => setDms((d) => ({ ...d, [productId]: [...(d[productId] || []), { from: 'seller', text: 'Hi! Thanks for your message - yes, this is available. Which size do you need?', time: Date.now() }] })), 900);
   };
   const threads = Object.keys(dms).filter((k) => dms[k].length).length;
 

@@ -6,11 +6,11 @@ import {
   listChats, listIncoming, listOutgoing, fullName, personInitials,
 } from '../social/socialService.js';
 
-function Person({ person, sub, children }) {
+function Person({ person, sub, children, className = '' }) {
   return (
-    <div className="person">
-      <span className="pa">{personInitials(person)}</span>
-      <div className="pi"><b>{fullName(person)}</b>{sub && <span>{sub}</span>}</div>
+    <div className={'person mq-chat-person-row ' + className}>
+      <span className="pa mq-chat-list-avatar">{personInitials(person)}</span>
+      <div className="pi mq-chat-list-copy"><b>{fullName(person)}</b>{sub && <span>{sub}</span>}</div>
       {children}
     </div>
   );
@@ -70,6 +70,7 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
                 <div><button className="btn" style={{ marginTop: 12 }} onClick={() => setTab('Find people')}>Find people</button></div>
               </div>
             )}
+            {chats.length > 0 && <div className="mq-chat-section-label">FRIENDS CHATS</div>}
             {chats.map((chat) => (
               <div key={chat.person.id} onClick={() => openChat(chat.person.id)} style={{ cursor: 'pointer' }}>
                 <Person person={chat.person} sub={preview(chat.last)}>
@@ -77,15 +78,15 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
                 </Person>
               </div>
             ))}
-            {productChats.length > 0 && <div className="menu-label" style={{ padding: '16px 0 6px' }}>PRODUCT MESSAGES</div>}
+            {productChats.length > 0 && <div className="mq-chat-section-label">PRODUCT / SELLER CHATS</div>}
             {productChats.map(({ product, last }) => (
-              <div className="person" key={product.id} onClick={() => go('dm', { pid: product.id })} style={{ cursor: 'pointer' }}>
-                <span className="pa" style={{ borderRadius: 10, background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></span>
-                <div className="pi">
+              <div className="mq-chat-person-row" key={product.id} onClick={() => go('dm', { pid: product.id })} style={{ cursor: 'pointer' }}>
+                <span className="mq-chat-list-avatar product-avatar" style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></span>
+                <div className="mq-chat-list-copy">
                   <b>{product.seller}</b>
                   <span>{product.name} · {(last.from === 'buyer' ? 'You: ' : 'Seller: ') + last.text}</span>
                 </div>
-                <span className="mini">Open</span>
+                <span className="mq-chat-type product">Product</span>
               </div>
             ))}
           </React.Fragment>

@@ -373,6 +373,48 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .chat-prod .th{width:38px;height:38px;border-radius:8px;flex:0 0 auto;}
 .picker{max-height:210px;overflow-y:auto;border-top:1px solid var(--line);padding:6px 18px;background:var(--panel);}
 
+/* MC - MERQO Connect: original graphite, gold, and plum messaging system */
+.mq-chat-screen{--chat-bg:#101214;--chat-panel:#191c20;--chat-panel-raised:#22262b;--chat-line:#343940;--chat-gold:#e7b84e;--chat-muted:#a3a9b0;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(ellipse at 92% 10%,rgba(231,184,78,.09),transparent 30%),var(--chat-bg);}
+.mq-chat-header{display:flex;align-items:center;gap:11px;min-height:72px;padding:10px 16px;background:linear-gradient(110deg,#1b1e22,#24221b);border-bottom:1px solid rgba(231,184,78,.24);color:#f4f3ef;}
+.mq-chat-back{width:36px;height:36px;flex:0 0 auto;border:1px solid var(--chat-line);border-radius:11px;color:var(--chat-gold);font-size:23px;line-height:1;}
+.mq-chat-avatar,.mq-chat-person-avatar{width:42px;height:42px;flex:0 0 auto;border:2px solid rgba(231,184,78,.72);border-radius:13px;background:#282c31;color:#f4f3ef;}
+.mq-chat-person-avatar{display:grid;place-items:center;font-size:13px;font-weight:700;}
+.mq-chat-head-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.mq-chat-head-copy b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mq-chat-head-copy>span{font-size:11px;color:var(--chat-muted);}
+.mq-chat-type{flex:0 0 auto;padding:5px 9px;border:1px solid rgba(231,184,78,.4);border-radius:8px;background:rgba(231,184,78,.08);color:var(--chat-gold);font-size:9px;font-weight:700;letter-spacing:.08em;}
+.mq-chat-type.product{border-color:rgba(180,145,226,.4);background:rgba(140,106,187,.12);color:#c8a9f0;}
+.mq-chat-context{display:flex;align-items:center;gap:10px;margin:10px 14px 0;padding:10px 12px;border:1px solid var(--chat-line);border-radius:13px;background:linear-gradient(110deg,#1b1e22,#202019);color:#f4f3ef;cursor:pointer;}
+.mq-chat-thumb{width:42px;height:42px;flex:0 0 auto;border:1px solid rgba(255,255,255,.14);border-radius:11px;}
+.mq-chat-context-info,.mq-chat-list-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.mq-chat-context-info b,.mq-chat-list-copy b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mq-chat-context-info span,.mq-chat-list-copy>span{font-size:11px;color:var(--chat-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mq-chat-context-action{color:var(--chat-gold);font-size:11px;font-weight:600;white-space:nowrap;}
+.mq-chat-messages{flex:1;min-height:0;overflow-y:auto;padding:16px 14px;background:radial-gradient(ellipse at 8% 85%,rgba(124,91,157,.07),transparent 34%);}
+.mq-chat-empty{width:max-content;max-width:88%;margin:16px auto;padding:10px 14px;border:1px solid rgba(231,184,78,.2);border-radius:12px;background:#1a1d20;color:#d1c9b8;font-size:12px;text-align:center;}
+.mq-chat-bubble{position:relative;width:fit-content;max-width:84%;margin:0 0 10px;padding:11px 13px 22px;border:1px solid transparent;border-radius:15px;font-size:13px;line-height:1.45;overflow-wrap:anywhere;box-shadow:0 5px 14px rgba(0,0,0,.14);}
+.mq-chat-bubble.received{margin-right:auto;border-color:#343940;background:linear-gradient(145deg,#24282d,#1d2024);color:#f0eee8;border-bottom-left-radius:4px;}
+.mq-chat-bubble.sent{margin-left:auto;border-color:rgba(231,184,78,.55);background:linear-gradient(145deg,#eac866,#d4a83f);color:#191710;border-bottom-right-radius:4px;}
+.mq-chat-time{position:absolute;right:9px;bottom:5px;color:rgba(235,231,219,.58);font-size:9px;}
+.mq-chat-bubble.sent .mq-chat-time{color:rgba(25,23,16,.6);}
+.mq-chat-shared-product{display:flex;align-items:center;gap:8px;min-width:210px;max-width:100%;margin-bottom:5px;padding:7px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(0,0,0,.16);cursor:pointer;}
+.mq-chat-shared-product .mq-chat-thumb{width:36px;height:36px;}
+.mq-chat-compose{display:flex;align-items:center;gap:9px;margin:9px 12px calc(10px + env(safe-area-inset-bottom,0px));padding:8px;border:1px solid #363a40;border-radius:16px;background:#1b1e22;box-shadow:0 8px 20px rgba(0,0,0,.22);}
+.mq-chat-compose input{flex:1;min-width:0;height:42px;padding:0 13px;border:1px solid #373c42;border-radius:11px;outline:none;background:#111417;color:#f4f3ef;font-size:13px;}
+.mq-chat-compose input:focus{border-color:rgba(231,184,78,.65);}
+.mq-chat-compose input::placeholder{color:#8e949b;}
+.mq-chat-send{min-width:62px;height:40px;padding:0 13px;border-radius:11px;background:var(--chat-gold);color:#18170f;font-size:12px;font-weight:700;}
+.mq-chat-attach{width:40px;height:40px;flex:0 0 auto;border:1px solid #45413a;border-radius:11px;background:#282722;color:var(--chat-gold);font-size:23px;}
+.mq-chat-unfriend{padding:7px 9px;border:1px solid #59413c;border-radius:9px;color:#e9a293;font-size:10px;}
+.mq-chat-disabled{justify-content:center;color:var(--chat-muted);font-size:12px;text-align:center;}
+.mq-chat-picker{max-height:210px;overflow-y:auto;margin:0 12px;padding:8px 12px;border:1px solid var(--chat-line);border-radius:14px;background:#191c20;}
+.mq-chat-section-label{padding:13px 3px 7px;color:var(--chat-gold);font-size:10px;font-weight:700;letter-spacing:.12em;}
+.mq-chat-person-row{display:flex;align-items:center;gap:12px;min-height:70px;margin:5px 0;padding:10px 12px;border:1px solid rgba(255,255,255,.055);border-radius:14px;background:linear-gradient(110deg,#1a1d21,#1d1e1b);cursor:pointer;}
+.mq-chat-person-row .mq-chat-list-avatar{width:46px;height:46px;display:grid;place-items:center;border:1px solid rgba(231,184,78,.3);border-radius:13px;background:#282c31;color:#f4f3ef;font-size:14px;font-weight:700;flex:0 0 auto;}
+.mq-chat-person-row .mq-chat-list-avatar.product-avatar{border-color:rgba(180,145,226,.35);border-radius:11px;}
+.mq-chat-list-copy{align-self:center;}
+.mq-chat-picker-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);cursor:pointer;}
+
 /* MC - product comments sheet */
 .cm-sheet{display:flex;flex-direction:column;height:70%;overflow:hidden;}
 .cm-list{flex:1;overflow-y:auto;margin:10px 0;}
