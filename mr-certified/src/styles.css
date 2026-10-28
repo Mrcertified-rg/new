@@ -318,3 +318,40 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .qty.big button{width:32px;height:32px;font-size:18px;}
 .qty.big b{min-width:22px;text-align:center;}
 .rm{color:#E8615A;font-size:13px;background:transparent;}
+
+/* MC - vertical order tracking timeline */
+.vstep{display:flex;gap:12px;position:relative;padding-bottom:18px;}
+.vstep:last-child{padding-bottom:0;}
+.vstep:not(:last-child):before{content:'';position:absolute;left:10px;top:22px;bottom:0;width:2px;background:var(--line);}
+.vstep.done:not(:last-child):before{background:var(--green);}
+.vdot{width:22px;height:22px;flex:0 0 auto;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#06210f;}
+.vstep.done .vdot{background:var(--green);}
+.vstep.now .vdot{background:var(--gold);}
+.vstep:not(.done):not(.now) b{color:var(--sub);}
+
+/* MC - like button and double-tap heart animation */
+.post{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+.side-actions .like-btn{gap:4px;}
+.heart-wrap{position:relative;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(20,22,26,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.22);transition:background .25s,border-color .25s,box-shadow .25s,transform .15s;}
+.like-btn:active .heart-wrap{transform:scale(.86);}
+.like-btn .heart{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.like-btn.on .heart-wrap{background:linear-gradient(145deg,#ff5f7e,#ff2d55);border-color:#ff8aa0;box-shadow:0 0 0 3px rgba(255,45,85,.25),0 6px 22px rgba(255,45,85,.65);}
+.like-btn.on .heart{fill:#fff;animation:heartPop .65s cubic-bezier(.2,1.6,.4,1);}
+.like-btn .count{font-size:11px;font-weight:600;}
+.like-btn.on .count{color:#ff8aa0;}
+@keyframes heartPop{0%{transform:scale(.2) rotate(-25deg);}45%{transform:scale(1.65) rotate(10deg);}70%{transform:scale(.88) rotate(-4deg);}100%{transform:scale(1) rotate(0);}}
+.burst{position:absolute;inset:0;pointer-events:none;}
+.burst i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:#ff5f7e;animation:burstOut .7s ease-out forwards;}
+.burst i:nth-child(even){background:#ffd166;width:5px;height:5px;margin:-2.5px;}
+@keyframes burstOut{0%{transform:rotate(var(--a)) translateY(0) scale(1);opacity:1;}100%{transform:rotate(var(--a)) translateY(-36px) scale(0);opacity:0;}}
+.burst .ring{position:absolute;inset:0;border-radius:50%;border:2px solid #ff5f7e;animation:ringOut .6s ease-out forwards;}
+@keyframes ringOut{0%{transform:scale(.6);opacity:.9;}100%{transform:scale(2.1);opacity:0;}}
+.dt-heart{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;pointer-events:none;z-index:5;filter:drop-shadow(0 6px 24px rgba(255,45,85,.8));animation:dtHeart .95s ease-out forwards;}
+@keyframes dtHeart{0%{transform:scale(0) rotate(-15deg);opacity:0;}15%{transform:scale(1.35) rotate(8deg);opacity:1;}30%{transform:scale(.95) rotate(-3deg);}60%{transform:scale(1.05);opacity:1;}100%{transform:scale(1.5) translateY(-40px);opacity:0;}}
+
+/* MC - product comments sheet */
+.cm-sheet{display:flex;flex-direction:column;height:70%;overflow:hidden;}
+.cm-list{flex:1;overflow-y:auto;margin:10px 0;}
+.cm-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);}
+.cm-input{display:flex;gap:8px;align-items:center;}
+.cm-input input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:10px 14px;color:var(--ink);font-size:13.5px;outline:none;}

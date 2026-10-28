@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PRODUCTS, INIT_TX, ORDERS } from './data.js';
+import { PRODUCTS, INIT_TX, ORDERS, money } from './data.js';
 import Feed from './components/Feed.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
 import SellerProfile from './components/SellerProfile.jsx';
@@ -16,6 +16,7 @@ import MarketerFeed from './components/MarketerFeed.jsx';
 import MyPromotions from './components/MyPromotions.jsx';
 import BuyModal from './components/BuyModal.jsx';
 import CreateModal from './components/CreateModal.jsx';
+import CommentsModal from './components/CommentsModal.jsx';
 import Cart from './components/cart.jsx';
 import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
@@ -63,6 +64,9 @@ function AppInner() {
   const [promotedTag, setPromotedTag] = useState(null);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState(ORDERS);
+  // MC - per-product comment state and active comments sheet
+  const [comments, setComments] = useState({});
+  const [commentPid, setCommentPid] = useState(null);
   const [dms, setDms] = useState({});
   const [toast, setToast] = useState(null);
 
@@ -152,6 +156,12 @@ function AppInner() {
     }
   }, [user?.id]);
 
+  // MC - open product links shared from the feed
+  useEffect(() => {
+    const id = Number(new URLSearchParams(window.location.search).get('product'));
+    if (id && PRODUCTS.some((product) => product.id === id)) { setPid(id); setScreen('product'); }
+  }, []);
+
   /* ------------------------------ shop actions ------------------------------ */
   const addTx = (t) => setTransactions([t, ...transactions]);
 
@@ -160,6 +170,43 @@ function AppInner() {
     setPromotedTag({ productId, marketerName: sellerAccount ? sellerAccount.name : user.firstName });
     go('mypromos');
   };
+
+  /* MC - share links and manage product comments */
+  const shareProduct = async (productId) => {
+    const product = PRODUCTS.find((item) => item.id === productId);
+    if (!product) return;
+    const url = window.location.origin + window.location.pathname + '?product=' + productId;
+    const shareData = { title: product.name, text: product.name + ' - ' + money(product.price) + ' on MR CERTIFIED', url };
+    try {
+      if (navigator.share) { await navigator.share(shareData); return; }
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied');
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      let copied = false;
+      try { copied = document.execCommand('copy'); } catch { copied = false; }
+      document.body.removeChild(textarea);
+      if (copied) showToast('Link copied');
+      else window.prompt('Copy this link', url);
+    }
+  };
+
+  const addComment = (productId, text) => setComments((current) => ({
+    ...current,
+    [productId]: [...(current[productId] || []), { id: Date.now(), uid: user.id, name: user.firstName, text, time: Date.now() }],
+  }));
+  const deleteComment = (productId, commentId) => setComments((current) => ({
+    ...current,
+    [productId]: (current[productId] || []).filter((comment) => comment.id !== commentId),
+  }));
+  const commentCount = (productId) => (comments[productId] || []).length;
 
   const addToCart = (productId, size) => requireAuth('add items to your cart', () => {
     setCart((c) => {
@@ -230,7 +277,7 @@ function AppInner() {
     </React.Fragment>
   );
   // MC - cart actions and order tracking
-  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} />;
+  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={shareProduct} onComment={setCommentPid} commentCount={commentCount} />;
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
   else if (screen === 'product') body = <ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} />;
@@ -238,7 +285,8 @@ function AppInner() {
   else if (screen === 'dm') body = <Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />;
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} />);
-  else if (screen === 'orders') body = withBar(<Orders orders={orders} />);
+  // MC - provide order history and product navigation to tracking
+  else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
   else if (screen === 'buyerprofile') body = withBar(<BuyerProfile setMode={switchMode} />);
   else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} />);
@@ -253,6 +301,7 @@ function AppInner() {
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}
+      {commentPid != null && <CommentsModal pid={commentPid} comments={comments[commentPid] || []} onAdd={addComment} onDelete={deleteComment} close={() => setCommentPid(null)} />}
       {modal === 'create' && <CreateModal close={closeModal} />}
       {toast && <div className="toast">{toast}</div>}
     </div>

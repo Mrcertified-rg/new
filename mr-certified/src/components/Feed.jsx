@@ -87,9 +87,51 @@ const FilterSelect = ({ label, value, onChange, children }) => (
   </label>
 );
 
-export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart }) {
+export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0 }) {
   const { requireAuth } = useAuth();
   const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
+  // MC - like counters, bursts, and double-tap heart animation
+  const [burst, setBurst] = useState({});
+  const [dtPop, setDtPop] = useState(null);
+  const tapRef = useRef({ id: null, t: 0, timer: null });
+  const isLiked = (id) => liked.includes(id);
+  const likeCount = (product) => product.orders * 4 + product.id * 13 + (isLiked(product.id) ? 1 : 0);
+  const fmtCount = (count) => (count >= 1000 ? (count / 1000).toFixed(1).replace('.0', '') + 'k' : String(count));
+
+  const toggleLike = (id) => requireAuth('like products', () => {
+    if (liked.includes(id)) {
+      setLiked((current) => current.filter((productId) => productId !== id));
+      return;
+    }
+    setLiked((current) => [...current, id]);
+    setBurst((current) => ({ ...current, [id]: (current[id] || 0) + 1 }));
+  });
+
+  const onPostTap = (event, product) => {
+    const tap = tapRef.current;
+    const now = Date.now();
+    if (tap.id === product.id && now - tap.t < 300) {
+      clearTimeout(tap.timer);
+      tap.id = null;
+      tap.t = 0;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      requireAuth('like products', () => {
+        setLiked((current) => (current.includes(product.id) ? current : [...current, product.id]));
+        setBurst((current) => ({ ...current, [product.id]: (current[product.id] || 0) + 1 }));
+        setDtPop({ id: product.id, x, y, n: now });
+      });
+      return;
+    }
+    tap.id = product.id;
+    tap.t = now;
+    tap.timer = setTimeout(() => {
+      tap.id = null;
+      go('product', { pid: product.id });
+    }, 300);
+  };
+
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('featured');
   const [showSug, setShowSug] = useState(false);
@@ -312,9 +354,15 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
             </button>
           </div>
         ) : list.map(product => (
-          <div className="post" key={product.id} onClick={() => go('product', { pid: product.id })}>
+          <div className="post" key={product.id} onClick={(event) => onPostTap(event, product)}>
             <div className="vid" style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
             <div className="shade"></div>
+            {dtPop && dtPop.id === product.id && (
+              <svg className="dt-heart" key={dtPop.n} style={{ left: dtPop.x, top: dtPop.y }} viewBox="0 0 24 24" aria-hidden="true">
+                <defs><linearGradient id="dtg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ff7a93" /><stop offset="1" stopColor="#ff2d55" /></linearGradient></defs>
+                <path fill="url(#dtg)" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              </svg>
+            )}
             <div className="post-info">
               <div className="seller-row">{product.seller}<span className="badge">✓ CERTIFIED</span></div>
               <h3>{product.name}</h3>
@@ -323,9 +371,22 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
             </div>
             {/* MC - add products directly to the cart */}
             <div className="side-actions" onClick={event => event.stopPropagation()}>
-              <button onClick={() => requireAuth('save products', () => setLiked(l => (l.includes(product.id) ? l.filter(x => x !== product.id) : [...l, product.id])))}><span className="ic">{liked.includes(product.id) ? '❤️' : '🤍'}</span>{liked.includes(product.id) ? 'Saved' : 'Like'}</button>
-              <button onClick={() => requireAuth('comment', () => {})}><span className="ic">💬</span>Comment</button>
-              <button><span className="ic">🔗</span>Share</button>
+              <button type="button" className={'like-btn' + (isLiked(product.id) ? ' on' : '')} onClick={() => toggleLike(product.id)} aria-pressed={isLiked(product.id)} aria-label={isLiked(product.id) ? 'Unlike' : 'Like'}>
+                <span className="heart-wrap">
+                  {isLiked(product.id) && burst[product.id] > 0 && (
+                    <span className="burst" key={burst[product.id]}>
+                      <b className="ring"></b>
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => <i key={n} style={{ '--a': n * 45 + 'deg' }}></i>)}
+                    </span>
+                  )}
+                  <svg className="heart" key={isLiked(product.id) ? 'on' + (burst[product.id] || 0) : 'off'} viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                  </svg>
+                </span>
+                <span className="count">{fmtCount(likeCount(product))}</span>
+              </button>
+              <button onClick={() => onComment(product.id)}><span className="ic">💬</span>{commentCount(product.id) || 'Comment'}</button>
+              <button onClick={() => onShare(product.id)}><span className="ic">🔗</span>Share</button>
               <button onClick={() => go('dm', { pid: product.id })}><span className="ic">✉️</span>DM</button>
               <button onClick={() => addToCart(product.id, product.sizes[0])}><span className="ic">🛒</span>Add to cart</button>
             </div>
