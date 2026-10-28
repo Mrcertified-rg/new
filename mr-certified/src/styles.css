@@ -349,6 +349,15 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .dt-heart{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;pointer-events:none;z-index:5;filter:drop-shadow(0 6px 24px rgba(255,45,85,.8));animation:dtHeart .95s ease-out forwards;}
 @keyframes dtHeart{0%{transform:scale(0) rotate(-15deg);opacity:0;}15%{transform:scale(1.35) rotate(8deg);opacity:1;}30%{transform:scale(.95) rotate(-3deg);}60%{transform:scale(1.05);opacity:1;}100%{transform:scale(1.5) translateY(-40px);opacity:0;}}
 
+/* MC - seller avatar, follow badge, and profile actions */
+.seller-avatar-wrap{position:relative;width:48px;height:58px;margin-bottom:4px;}
+.side-actions .seller-avatar{width:48px;height:48px;border-radius:50%;background:var(--gold);color:#101214;border:2px solid #fff;font-family:var(--font-head);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.45);}
+.side-actions .follow-badge{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:#ff2d55;color:#fff;font-size:15px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;gap:0;box-shadow:0 2px 8px rgba(255,45,85,.6);transition:background .2s,color .2s;}
+.side-actions .follow-badge.on{background:#fff;color:#ff2d55;animation:badgePop .5s cubic-bezier(.2,1.6,.4,1);}
+@keyframes badgePop{0%{transform:translateX(-50%) scale(.3);}60%{transform:translateX(-50%) scale(1.4);}100%{transform:translateX(-50%) scale(1);}}
+.sp-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;}
+.sp-actions .btn{flex:1;max-width:150px;padding:10px;font-size:13.5px;}
+
 /* MC - product comments sheet */
 .cm-sheet{display:flex;flex-direction:column;height:70%;overflow:hidden;}
 .cm-list{flex:1;overflow-y:auto;margin:10px 0;}

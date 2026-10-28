@@ -64,6 +64,8 @@ function AppInner() {
   const [promotedTag, setPromotedTag] = useState(null);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState(ORDERS);
+  // MC - followed seller names for the current buyer session
+  const [following, setFollowing] = useState([]);
   // MC - per-product comment state and active comments sheet
   const [comments, setComments] = useState({});
   const [commentPid, setCommentPid] = useState(null);
@@ -150,7 +152,7 @@ function AppInner() {
   // Signing out (or switching account) clears everything that belonged to the old user.
   useEffect(() => {
     if (!user) {
-      setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setSellerAccount(null);
+      setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setFollowing([]); setSellerAccount(null);
     } else {
       setSellerAccount(getBusinessProfile(user.id));
     }
@@ -207,6 +209,11 @@ function AppInner() {
     [productId]: (current[productId] || []).filter((comment) => comment.id !== commentId),
   }));
   const commentCount = (productId) => (comments[productId] || []).length;
+
+  // MC - authenticate seller follow actions
+  const toggleFollow = (seller) => requireAuth('follow sellers', () => {
+    setFollowing((current) => (current.includes(seller) ? current.filter((name) => name !== seller) : [...current, seller]));
+  });
 
   const addToCart = (productId, size) => requireAuth('add items to your cart', () => {
     setCart((c) => {
@@ -277,14 +284,14 @@ function AppInner() {
     </React.Fragment>
   );
   // MC - cart actions and order tracking
-  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={shareProduct} onComment={setCommentPid} commentCount={commentCount} />;
+  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={shareProduct} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} />;
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
   else if (screen === 'product') body = <ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} />;
   else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} toggleItem={toggleItem} toggleAll={toggleAll} go={go} openModal={openModal} />);
   else if (screen === 'dm') body = <Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />;
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
-  else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} />);
+  else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
   else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
   else if (screen === 'buyerprofile') body = withBar(<BuyerProfile setMode={switchMode} />);

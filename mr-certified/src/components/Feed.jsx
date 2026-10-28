@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useCallback } from 'react';
-import { PRODUCTS, money } from '../data.js';
+import { PRODUCTS, money, initials } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import AccountMenu from './layout/AccountMenu.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
@@ -87,7 +87,7 @@ const FilterSelect = ({ label, value, onChange, children }) => (
   </label>
 );
 
-export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0 }) {
+export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0, following = [], onFollow }) {
   const { requireAuth } = useAuth();
   const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
   // MC - like counters, bursts, and double-tap heart animation
@@ -371,6 +371,20 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
             </div>
             {/* MC - add products directly to the cart */}
             <div className="side-actions" onClick={event => event.stopPropagation()}>
+              {/* MC - seller profile and follow actions */}
+              <div className="seller-avatar-wrap">
+                <button type="button" className="seller-avatar" onClick={() => go('sellerprofile', { pid: product.id })} aria-label={'View ' + product.seller + ' profile'}>
+                  {initials(product.seller)}
+                </button>
+                <button
+                  type="button"
+                  className={'follow-badge' + (following.includes(product.seller) ? ' on' : '')}
+                  onClick={() => onFollow && onFollow(product.seller)}
+                  aria-label={following.includes(product.seller) ? 'Unfollow ' + product.seller : 'Follow ' + product.seller}
+                >
+                  {following.includes(product.seller) ? '✓' : '+'}
+                </button>
+              </div>
               <button type="button" className={'like-btn' + (isLiked(product.id) ? ' on' : '')} onClick={() => toggleLike(product.id)} aria-pressed={isLiked(product.id)} aria-label={isLiked(product.id) ? 'Unlike' : 'Like'}>
                 <span className="heart-wrap">
                   {isLiked(product.id) && burst[product.id] > 0 && (
