@@ -17,6 +17,9 @@ import MyPromotions from './components/MyPromotions.jsx';
 import BuyModal from './components/BuyModal.jsx';
 import CreateModal from './components/CreateModal.jsx';
 import CommentsModal from './components/CommentsModal.jsx';
+import Friends from './components/Friends.jsx';
+import Chat from './components/Chat.jsx';
+import ShareSheet from './components/ShareSheet.jsx';
 import Cart from './components/cart.jsx';
 import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
@@ -45,6 +48,8 @@ const ACCOUNT_SCREENS = {
   cart: 'view your cart',
   orders: 'see your orders',
   buyerprofile: 'open your profile',
+  friends: 'see your friends',
+  chat: 'chat with friends',
 };
 
 function AppInner() {
@@ -66,6 +71,9 @@ function AppInner() {
   const [orders, setOrders] = useState(ORDERS);
   // MC - followed seller names for the current buyer session
   const [following, setFollowing] = useState([]);
+  // MC - active friend chat and product share sheet
+  const [chatUid, setChatUid] = useState(null);
+  const [shareFor, setShareFor] = useState(null);
   // MC - per-product comment state and active comments sheet
   const [comments, setComments] = useState({});
   const [commentPid, setCommentPid] = useState(null);
@@ -152,7 +160,7 @@ function AppInner() {
   // Signing out (or switching account) clears everything that belonged to the old user.
   useEffect(() => {
     if (!user) {
-      setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setFollowing([]); setSellerAccount(null);
+      setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setFollowing([]); setChatUid(null); setShareFor(null); setSellerAccount(null);
     } else {
       setSellerAccount(getBusinessProfile(user.id));
     }
@@ -209,6 +217,9 @@ function AppInner() {
     [productId]: (current[productId] || []).filter((comment) => comment.id !== commentId),
   }));
   const commentCount = (productId) => (comments[productId] || []).length;
+
+  // MC - open a friend chat after passing account access checks
+  const openChat = (userId) => { setChatUid(userId); go('chat'); };
 
   // MC - authenticate seller follow actions
   const toggleFollow = (seller) => requireAuth('follow sellers', () => {
@@ -284,12 +295,14 @@ function AppInner() {
     </React.Fragment>
   );
   // MC - cart actions and order tracking
-  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={shareProduct} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} />;
+  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={setShareFor} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} />;
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
   else if (screen === 'product') body = <ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} />;
   else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} toggleItem={toggleItem} toggleAll={toggleAll} go={go} openModal={openModal} />);
   else if (screen === 'dm') body = <Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />;
+  else if (screen === 'friends' && user) body = withBar(<Friends me={user} go={go} openChat={openChat} following={following} onFollow={toggleFollow} showToast={showToast} dms={dms} />);
+  else if (screen === 'chat' && user && chatUid) body = withBar(<Chat me={user} otherId={chatUid} go={go} />);
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
@@ -308,6 +321,7 @@ function AppInner() {
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}
+      {shareFor != null && <ShareSheet pid={shareFor} close={() => setShareFor(null)} onExternal={shareProduct} go={go} showToast={showToast} />}
       {commentPid != null && <CommentsModal pid={commentPid} comments={comments[commentPid] || []} onAdd={addComment} onDelete={deleteComment} close={() => setCommentPid(null)} />}
       {modal === 'create' && <CreateModal close={closeModal} />}
       {toast && <div className="toast">{toast}</div>}

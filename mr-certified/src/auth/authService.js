@@ -263,3 +263,22 @@ export function saveBusinessProfile(userId, profile) {
   all[userId] = profile;
   write(KEYS.business, all);
 }
+
+/* ---------------------- people directory (friends) ---------------------- */
+// MC - expose only public name fields to friend search and chats
+const toPerson = (user) => ({ id: user.id, firstName: user.firstName, lastName: user.lastName });
+
+export function getPerson(id) {
+  const user = findUserById(id);
+  return user ? toPerson(user) : null;
+}
+
+/** Search people by name without exposing account contact or address details. */
+export function findPeople(query, excludeId) {
+  const normalizedQuery = (query || '').trim().toLowerCase();
+  if (normalizedQuery.length < 2) return [];
+  return loadUsers()
+    .filter((user) => user.id !== excludeId && (user.firstName + ' ' + user.lastName).toLowerCase().includes(normalizedQuery))
+    .slice(0, 20)
+    .map(toPerson);
+}

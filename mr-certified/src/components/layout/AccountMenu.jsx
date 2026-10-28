@@ -5,11 +5,12 @@
  *   - Signed in: pages for the ACTIVE mode, a "Switch mode" list, Sign out.
  * Switching to Seller/Marketer is handled by App (it asks for the role login).
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Popover from '../ui/Popover.jsx';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { ROLE_LABEL, STATUS_LABEL } from '../../auth/config.js';
 import { MENU_BY_MODE, MODE_OPTIONS } from './menuConfig.js';
+import { countIncoming, unreadTotal } from '../../social/socialService.js';
 import {
   UserIcon, CheckIcon, LockIcon, LogOutIcon, HomeIcon, PackageIcon, CartIcon, GridIcon,
   ReceiptIcon, MegaphoneIcon, MessageIcon, SparkIcon, SettingsIcon, StoreIcon, BagIcon,
@@ -20,6 +21,18 @@ const ICONS = {
   records: ReceiptIcon, megaphone: MegaphoneIcon, inbox: MessageIcon, ai: SparkIcon, settings: SettingsIcon,
   store: StoreIcon, bag: BagIcon,
 };
+
+function useSocialBadge(user) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!user) { setCount(0); return undefined; }
+    const refresh = () => setCount(countIncoming(user.id) + unreadTotal(user.id));
+    refresh();
+    const timer = setInterval(refresh, 3000);
+    return () => clearInterval(timer);
+  }, [user && user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return count;
+}
 
 /** Small grey line under each mode in the switch list. */
 function modeSub(role, user) {
@@ -33,6 +46,7 @@ function modeSub(role, user) {
 
 export default function AccountMenu({ go, mode = 'buyer', onSwitchMode, cartCount = 0 }) {
   const { user, signOut, promptAuth } = useAuth();
+  const socialCount = useSocialBadge(user);
   const initials = user ? (user.firstName[0] + user.lastName[0]).toUpperCase() : '';
   const roleStatus = user?.roles?.[mode]?.status;
 
@@ -78,6 +92,7 @@ export default function AccountMenu({ go, mode = 'buyer', onSwitchMode, cartCoun
                   <button type="button" key={item.screen} className="menu-item" onClick={() => { close(); go(item.screen); }}>
                     <Ico size={17} /><span>{item.label}</span>
                     {item.badge === 'cart' && cartCount > 0 && <span className="menu-count">{cartCount}</span>}
+                    {item.badge === 'social' && socialCount > 0 && <span className="menu-count">{socialCount}</span>}
                   </button>
                 );
               })}

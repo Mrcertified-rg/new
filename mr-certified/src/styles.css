@@ -358,6 +358,21 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .sp-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;}
 .sp-actions .btn{flex:1;max-width:150px;padding:10px;font-size:13.5px;}
 
+/* MC - friends, requests, and in-app chat */
+.tabs.sm{padding:10px 14px 6px;overflow-x:auto;white-space:nowrap;}
+.person{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line);}
+.person .pa{width:42px;height:42px;border-radius:50%;background:rgba(231,184,78,.14);color:var(--gold);display:grid;place-items:center;font-weight:700;font-size:14px;flex:0 0 auto;}
+.person .pi{flex:1;min-width:0;}
+.person .pi b{font-size:14px;display:block;}
+.person .pi span{font-size:12px;color:var(--sub);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini{padding:7px 12px;font-size:12.5px;border-radius:10px;font-weight:600;background:var(--ink);color:#101214;white-space:nowrap;display:inline-block;}
+.mini.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
+.mini.green{background:var(--green);color:#06210f;}
+.unread{min-width:20px;height:20px;border-radius:10px;background:#ff2d55;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 6px;}
+.chat-prod{display:flex;gap:10px;align-items:center;background:rgba(0,0,0,.18);border-radius:10px;padding:8px;margin-bottom:6px;cursor:pointer;}
+.chat-prod .th{width:38px;height:38px;border-radius:8px;flex:0 0 auto;}
+.picker{max-height:210px;overflow-y:auto;border-top:1px solid var(--line);padding:6px 18px;background:var(--panel);}
+
 /* MC - product comments sheet */
 .cm-sheet{display:flex;flex-direction:column;height:70%;overflow:hidden;}
 .cm-list{flex:1;overflow-y:auto;margin:10px 0;}
