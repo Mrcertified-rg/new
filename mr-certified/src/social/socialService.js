@@ -5,7 +5,7 @@
  */
 import { getPerson } from '../auth/authService.js';
 
-const KEYS = { links: 'mrc.demo.friendlinks', chats: 'mrc.demo.chats', reads: 'mrc.demo.chatreads' };
+const KEYS = { links: 'mrc.demo.friendlinks', chats: 'mrc.demo.chats', reads: 'mrc.demo.chatreads', follows: 'mrc.demo.sellerfollows' };
 
 const read = (key, fallback) => {
   try {
@@ -104,3 +104,19 @@ export function listChats(me) {
 }
 
 export const unreadTotal = (me) => listChats(me).reduce((sum, chat) => sum + chat.unread, 0);
+
+// MC - keep seller follows connected to each buyer account across sessions
+export function listFollowedSellers(me) {
+  const all = read(KEYS.follows, {});
+  return Array.isArray(all[me]) ? all[me] : [];
+}
+
+export function toggleFollowedSeller(me, seller) {
+  if (!me || !seller) throw new Error('A buyer and seller are required to update follows.');
+  const all = read(KEYS.follows, {});
+  const current = Array.isArray(all[me]) ? all[me] : [];
+  const next = current.includes(seller) ? current.filter((name) => name !== seller) : [...current, seller];
+  all[me] = next;
+  write(KEYS.follows, all);
+  return next;
+}

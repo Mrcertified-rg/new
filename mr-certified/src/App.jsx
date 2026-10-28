@@ -27,8 +27,9 @@ import AppBar from './components/layout/AppBar.jsx';
 import RoleStatusBanner from './components/auth/RoleStatusBanner.jsx';
 import { ArrowLeftIcon } from './components/ui/Icons.jsx';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
-import { getBusinessProfile, saveBusinessProfile } from './auth/authService.js';
+import { getBusinessProfile, restoreSession, saveBusinessProfile } from './auth/authService.js';
 import { ROLE_LABEL } from './auth/config.js';
+import { listFollowedSellers, toggleFollowedSeller } from './social/socialService.js';
 
 /* ---------------------------------------------------------------------------
  * Navigation rules (all in one place)
@@ -69,8 +70,8 @@ function AppInner() {
   const [promotedTag, setPromotedTag] = useState(null);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState(ORDERS);
-  // MC - followed seller names for the current buyer session
-  const [following, setFollowing] = useState([]);
+  // MC - keep seller follows attached to the signed-in buyer across sessions
+  const [following, setFollowing] = useState(() => (user ? listFollowedSellers(user.id) : []));
   // MC - active friend chat and product share sheet
   const [chatUid, setChatUid] = useState(null);
   const [shareFor, setShareFor] = useState(null);
@@ -163,6 +164,7 @@ function AppInner() {
       setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setFollowing([]); setChatUid(null); setShareFor(null); setSellerAccount(null);
     } else {
       setSellerAccount(getBusinessProfile(user.id));
+      setFollowing(listFollowedSellers(user.id));
     }
   }, [user?.id]);
 
@@ -221,9 +223,11 @@ function AppInner() {
   // MC - open a friend chat after passing account access checks
   const openChat = (userId) => { setChatUid(userId); go('chat'); };
 
-  // MC - authenticate seller follow actions
+  // MC - authenticate and persist seller follow actions per buyer account
   const toggleFollow = (seller) => requireAuth('follow sellers', () => {
-    setFollowing((current) => (current.includes(seller) ? current.filter((name) => name !== seller) : [...current, seller]));
+    const activeUser = user || restoreSession();
+    if (!activeUser) throw new Error('Sign in before following a seller.');
+    setFollowing(toggleFollowedSeller(activeUser.id, seller));
   });
 
   const addToCart = (productId, size) => requireAuth('add items to your cart', () => {
@@ -307,7 +311,7 @@ function AppInner() {
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
   else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
-  else if (screen === 'buyerprofile') body = withBar(<BuyerProfile setMode={switchMode} />);
+  else if (screen === 'buyerprofile') body = withBar(<BuyerProfile setMode={switchMode} go={go} following={following} onFollow={toggleFollow} />);
   else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} />);
   else if (screen === 'records') body = withBar(<Records transactions={transactions} addTx={addTx} />);

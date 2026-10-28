@@ -16,7 +16,7 @@
  * ---------------------------------------------------------------------------
  */
 import { DEMO_MODE, SESSION_DAYS, MAX_FAILED_ATTEMPTS, LOCKOUT_SECONDS, ROLE_LABEL } from './config.js';
-import { parseIdentifier, normalizeEmail, normalizePhone } from './validators.js';
+import { parseIdentifier, normalizeEmail, normalizePhone, validateDeliveryStep } from './validators.js';
 
 const KEYS = {
   users: 'mrc.demo.users',
@@ -193,6 +193,26 @@ export async function signInUser(identifierRaw, password) {
   }
   clearFailures(lockKey);
   startSession(user.id);
+  return toPublicUser(user);
+}
+
+export async function updateBuyerAddress(userId, address) {
+  const errors = validateDeliveryStep(address);
+  if (Object.keys(errors).length) throw authError('invalid-address', Object.values(errors)[0]);
+
+  const users = loadUsers();
+  const user = users.find((item) => item.id === userId);
+  if (!user) throw authError('no-user', 'Please sign in again.');
+
+  user.address = {
+    county: address.county,
+    town: address.town.trim(),
+    area: address.area.trim(),
+    landmark: address.landmark.trim(),
+    altPhone: address.altPhone.trim() ? normalizePhone(address.altPhone) : '',
+    notes: address.notes.trim(),
+  };
+  saveUsers(users);
   return toPublicUser(user);
 }
 

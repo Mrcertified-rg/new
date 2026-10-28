@@ -1,11 +1,11 @@
 import React, { useMemo, useRef, useState, useCallback } from 'react';
-import { PRODUCTS, money, initials } from '../data.js';
+import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import AccountMenu from './layout/AccountMenu.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
 import {
   SearchIcon, SlidersIcon, ChevronDownIcon, CheckIcon, CloseIcon, BellIcon, CartIcon,
-  PackageIcon, StarIcon, TagIcon, ResetIcon, FlameIcon,
+  PackageIcon, StarIcon, TagIcon, ResetIcon, FlameIcon, BagIcon, MessageIcon,
 } from './ui/Icons.jsx';
 
 /* ---------- search helpers ---------- */
@@ -63,7 +63,15 @@ function scoreProduct(product, terms, query) {
 }
 
 /* ---------- filter / sort config ---------- */
-const CATS = ['For You', 'Shoes', 'Men', 'Women', 'Kids', 'Beauty', 'Accessories', 'Services'];
+const CATEGORY_EDITS = [
+  { category: 'Shoes', title: 'Street rotation', note: 'Pairs with a point of view' },
+  { category: 'Men', title: 'Everyday layers', note: 'Easy pieces, made to wear' },
+  { category: 'Beauty', title: 'Soft life', note: 'Small rituals, good energy' },
+  { category: 'Kids', title: 'Little legends', note: 'Good finds for growing days' },
+];
+
+const CATS = ['For You', ...new Set(PRODUCTS.map(product => product.cat))];
+const SPOTLIGHT = [...PRODUCTS].sort((a, b) => b.rating - a.rating || b.orders - a.orders)[0];
 
 const SORTS = [
   { id: 'featured',   label: 'Featured',           icon: FlameIcon },
@@ -90,10 +98,6 @@ const FilterSelect = ({ label, value, onChange, children }) => (
 export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0, following = [], onFollow }) {
   const { requireAuth } = useAuth();
   const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
-  // MC - like counters, bursts, and double-tap heart animation
-  const [burst, setBurst] = useState({});
-  const [dtPop, setDtPop] = useState(null);
-  const tapRef = useRef({ id: null, t: 0, timer: null });
   const isLiked = (id) => liked.includes(id);
   const likeCount = (product) => product.orders * 4 + product.id * 13 + (isLiked(product.id) ? 1 : 0);
   const fmtCount = (count) => (count >= 1000 ? (count / 1000).toFixed(1).replace('.0', '') + 'k' : String(count));
@@ -104,33 +108,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       return;
     }
     setLiked((current) => [...current, id]);
-    setBurst((current) => ({ ...current, [id]: (current[id] || 0) + 1 }));
   });
-
-  const onPostTap = (event, product) => {
-    const tap = tapRef.current;
-    const now = Date.now();
-    if (tap.id === product.id && now - tap.t < 300) {
-      clearTimeout(tap.timer);
-      tap.id = null;
-      tap.t = 0;
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      requireAuth('like products', () => {
-        setLiked((current) => (current.includes(product.id) ? current : [...current, product.id]));
-        setBurst((current) => ({ ...current, [product.id]: (current[product.id] || 0) + 1 }));
-        setDtPop({ id: product.id, x, y, n: now });
-      });
-      return;
-    }
-    tap.id = product.id;
-    tap.t = now;
-    tap.timer = setTimeout(() => {
-      tap.id = null;
-      go('product', { pid: product.id });
-    }, 300);
-  };
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('featured');
@@ -184,11 +162,17 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const resetFilters = () => { setCity('any'); setColor('any'); setSize('any'); setPmin(''); setPmax(''); };
   const digits = v => v.replace(/[^0-9]/g, '');
   const isFiltering = !!query.trim() || activeFilters > 0 || catFilter !== 'For You';
+  const showSpotlight = !isFiltering;
+  const categoryEdits = CATEGORY_EDITS.filter(edit => CATS.includes(edit.category));
   const currentSort = SORTS.find(s => s.id === sort) || SORTS[0];
   const SortCurrentIcon = currentSort.icon;
 
   return (
     <React.Fragment>
+      <div className="mc-masthead">
+        <div className="mc-wordmark">MERQO<span>.</span></div>
+        <div className="mc-edition"><span>THE BUYER'S EDIT</span><b>KENYA · 001</b></div>
+      </div>
       {/* ---------- top bar: search + filters + actions ---------- */}
       <div className="mc-bar" ref={barRef}>
         <div className="mc-searchbox">
@@ -316,29 +300,85 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
         </div>
       )}
 
-      <div className="mc-hint">
-        <span>Search by product, category, seller, color, size, or location</span>
-        {isFiltering && <b>{list.length} result{list.length === 1 ? '' : 's'}</b>}
+      <div className="mc-intro">
+        <span className="mc-kicker">GOOD TASTE. SOLID PROOF.</span>
+        <h1>Find the one that feels like you.</h1>
+        <p>Meet standout goods from Kenyan shops with a track record.</p>
       </div>
 
-      {/* ---------- categories ---------- */}
-      <div className="cats">
-        {CATS.map(category => (
-          <span
-            key={category}
-            role="button"
-            tabIndex={0}
-            className={category === catFilter ? 'on' : ''}
-            onClick={() => setCatFilter(category)}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCatFilter(category); } }}
+      {showSpotlight && (
+        <section className="market-spotlight" aria-label="MERQO standout pick">
+          <div className="spotlight-art" style={{ '--art-a': SPOTLIGHT.g[0], '--art-b': SPOTLIGHT.g[1] }} aria-hidden="true">
+            <span className="spotlight-orbit"></span>
+            <span className="spotlight-serial">MQ / PICK 001</span>
+            <span className="spotlight-category">{SPOTLIGHT.cat}</span>
+          </div>
+          <div className="spotlight-copy">
+            <span className="spotlight-label"><StarIcon size={12} /> THE MERQO STANDOUT</span>
+            <h2>{SPOTLIGHT.name}</h2>
+            <p className="spotlight-seller">{SPOTLIGHT.seller} <span>·</span> {SPOTLIGHT.city}</p>
+            <div className="spotlight-proof">
+              <span>★ {SPOTLIGHT.rating}</span>
+              <span>{SPOTLIGHT.orders} completed orders</span>
+              <span>{SPOTLIGHT.delivery}% delivery rate</span>
+            </div>
+            <div className="spotlight-bottom">
+              <b>{money(SPOTLIGHT.price)}</b>
+              <button type="button" onClick={() => go('product', { pid: SPOTLIGHT.id })}>Meet the find <span aria-hidden="true">↗</span></button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ---------- mood-led discovery ---------- */}
+      <section className="market-edits" aria-label="Shop by mood">
+        <div className="market-section-head">
+          <div><span className="mc-kicker">YOUR VIBE, YOUR FINDS</span><h2>Shop by mood</h2></div>
+          <div className="market-section-actions">
+            {isFiltering && <span className="market-result-count">{list.length} result{list.length === 1 ? '' : 's'}</span>}
+            <button
+              type="button"
+              className={'market-budget' + (pmax === '2500' && pmin === '' ? ' on' : '')}
+              aria-pressed={pmax === '2500' && pmin === ''}
+              onClick={() => {
+                const active = pmax === '2500' && pmin === '';
+                setPmin('');
+                setPmax(active ? '' : '2500');
+                setSort('price-asc');
+              }}
+            >
+              <span>₭</span><b>Under 2.5k</b><i>{pmax === '2500' && pmin === '' ? '✓' : '↗'}</i>
+            </button>
+          </div>
+        </div>
+        <div className="market-edit-list">
+          <button
+            type="button"
+            className={'market-edit market-edit-all' + (catFilter === 'For You' ? ' on' : '')}
+            onClick={() => setCatFilter('For You')}
+            aria-pressed={catFilter === 'For You'}
           >
-            {category}
-          </span>
-        ))}
-      </div>
+            <span className="market-edit-mark">✳</span><span><b>Surprise me</b><small>The whole good list</small></span><i>↗</i>
+          </button>
+          {categoryEdits.map((edit, index) => (
+            <button
+              type="button"
+              key={edit.category}
+              className={'market-edit market-edit-' + index + (edit.category === catFilter ? ' on' : '')}
+              onClick={() => setCatFilter(edit.category)}
+              aria-pressed={edit.category === catFilter}
+            >
+              <span className="market-edit-mark">{['◌', '▧', '✷', '⌂'][index]}</span>
+              <span><b>{edit.title}</b><small>{edit.note}</small></span>
+              <i>↗</i>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* ---------- feed ---------- */}
-      <div className="screen feed">
+      <div className="screen market-feed">
+        {!isFiltering && <div className="market-list-heading"><span>THE GOOD STUFF</span><span>{list.length} finds, no filler</span></div>}
         {list.length === 0 ? (
           <div className="empty-state">
             <SearchIcon size={28} />
@@ -353,58 +393,51 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <ResetIcon size={15} /> Clear search &amp; filters
             </button>
           </div>
-        ) : list.map(product => (
-          <div className="post" key={product.id} onClick={(event) => onPostTap(event, product)}>
-            <div className="vid" style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
-            <div className="shade"></div>
-            {dtPop && dtPop.id === product.id && (
-              <svg className="dt-heart" key={dtPop.n} style={{ left: dtPop.x, top: dtPop.y }} viewBox="0 0 24 24" aria-hidden="true">
-                <defs><linearGradient id="dtg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ff7a93" /><stop offset="1" stopColor="#ff2d55" /></linearGradient></defs>
-                <path fill="url(#dtg)" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-              </svg>
-            )}
-            <div className="post-info">
-              <div className="seller-row">{product.seller}<span className="badge">✓ CERTIFIED</span></div>
-              <h3>{product.name}</h3>
-              <div className="price">{money(product.price)}</div>
-              <div className="meta-line">⭐ {product.rating} · {product.orders} completed orders · {product.city}</div>
-            </div>
-            {/* MC - add products directly to the cart */}
-            <div className="side-actions" onClick={event => event.stopPropagation()}>
-              {/* MC - seller profile and follow actions */}
-              <div className="seller-avatar-wrap">
-                <button type="button" className="seller-avatar" onClick={() => go('sellerprofile', { pid: product.id })} aria-label={'View ' + product.seller + ' profile'}>
-                  {initials(product.seller)}
-                </button>
+        ) : list.map((product, index) => (
+          <article className="market-card" key={product.id}>
+            <button
+              type="button"
+              className={'market-art market-tone-' + (index % 4)}
+              style={{ '--art-a': product.g[0], '--art-b': product.g[1] }}
+              onClick={() => go('product', { pid: product.id })}
+              aria-label={'View ' + product.name}
+            >
+              <span className="market-art-head"><span>MERQO / {product.cat.toUpperCase()}</span><span>№ {String(product.id).padStart(3, '0')}</span></span>
+              <span className="market-orbit" aria-hidden="true"></span>
+              <span className="market-art-title">{product.cat}</span>
+              <span className="market-art-stamp">SHOP<br />CHECKED</span>
+            </button>
+            <div className="market-card-body">
+              <div className="market-seller">
+                <button type="button" onClick={() => go('sellerprofile', { pid: product.id })}>{product.seller}<span className="market-verified">✓</span></button>
                 <button
                   type="button"
-                  className={'follow-badge' + (following.includes(product.seller) ? ' on' : '')}
+                  className={'market-follow' + (following.includes(product.seller) ? ' on' : '')}
                   onClick={() => onFollow && onFollow(product.seller)}
                   aria-label={following.includes(product.seller) ? 'Unfollow ' + product.seller : 'Follow ' + product.seller}
                 >
-                  {following.includes(product.seller) ? '✓' : '+'}
+                  {following.includes(product.seller) ? 'Following' : '+ Follow'}
                 </button>
               </div>
-              <button type="button" className={'like-btn' + (isLiked(product.id) ? ' on' : '')} onClick={() => toggleLike(product.id)} aria-pressed={isLiked(product.id)} aria-label={isLiked(product.id) ? 'Unlike' : 'Like'}>
-                <span className="heart-wrap">
-                  {isLiked(product.id) && burst[product.id] > 0 && (
-                    <span className="burst" key={burst[product.id]}>
-                      <b className="ring"></b>
-                      {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => <i key={n} style={{ '--a': n * 45 + 'deg' }}></i>)}
-                    </span>
-                  )}
-                  <svg className="heart" key={isLiked(product.id) ? 'on' + (burst[product.id] || 0) : 'off'} viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                  </svg>
-                </span>
-                <span className="count">{fmtCount(likeCount(product))}</span>
-              </button>
-              <button onClick={() => onComment(product.id)}><span className="ic">💬</span>{commentCount(product.id) || 'Comment'}</button>
-              <button onClick={() => onShare(product.id)}><span className="ic">🔗</span>Share</button>
-              <button onClick={() => go('dm', { pid: product.id })}><span className="ic">✉️</span>DM</button>
-              <button onClick={() => addToCart(product.id, product.sizes[0])}><span className="ic">🛒</span>Add to cart</button>
+              <button type="button" className="market-product-title" onClick={() => go('product', { pid: product.id })}>{product.name}</button>
+              <div className="market-rating"><span>★ {product.rating}</span><span>·</span><span>{product.city}</span></div>
+              <div className="market-buy-row">
+                <span className="market-price">{money(product.price)}</span>
+                <button type="button" className="market-add" onClick={() => addToCart(product.id, product.sizes[0])}><BagIcon size={15} /> Add</button>
+              </div>
+              <div className="market-actions">
+                <button type="button" className={'market-like' + (isLiked(product.id) ? ' on' : '')} onClick={() => toggleLike(product.id)} aria-pressed={isLiked(product.id)} aria-label={isLiked(product.id) ? 'Unlike product' : 'Like product'} title="Like">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+                  <span>{fmtCount(likeCount(product))}</span>
+                </button>
+                <button type="button" onClick={() => onComment(product.id)} aria-label="View comments" title="Comments"><MessageIcon size={16} /><span>{commentCount(product.id) || ''}</span></button>
+                <button type="button" onClick={() => onShare(product.id)} aria-label="Share product" title="Share">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" /></svg>
+                </button>
+                <button type="button" onClick={() => go('dm', { pid: product.id })} aria-label="Message seller" title="Message seller"><span className="market-dm">DM</span></button>
+              </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </React.Fragment>

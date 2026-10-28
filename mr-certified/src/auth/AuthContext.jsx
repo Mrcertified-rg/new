@@ -15,7 +15,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   restoreSession, registerUser, signInUser, signOutUser,
-  verifyRolePassword, applyForRole, setRoleStatusDemo,
+  verifyRolePassword, applyForRole, setRoleStatusDemo, updateBuyerAddress,
 } from './authService.js';
 import { ROLE_IDLE_MINUTES } from './config.js';
 import AuthSheet from '../components/auth/AuthSheet.jsx';
@@ -80,6 +80,11 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const saveBuyerAddress = async (address) => {
+    if (!user) throw new Error('Please sign in again to update your delivery details.');
+    setUser(await updateBuyerAddress(user.id, address));
+  };
+
   /* ------------------- seller / marketer unlocking ------------------- */
   /** Opens the "log in to Seller mode" popup (or the "apply" popup if they never applied). */
   const openRoleAccess = useCallback((role, onDone) => {
@@ -127,7 +132,7 @@ export function AuthProvider({ children }) {
   }, [elevatedRole]);
 
   const value = {
-    user, elevatedRole,
+    user, elevatedRole, saveBuyerAddress,
     sheet, promptAuth, closeAuth, setSheetView, requireAuth, signUp, signIn, signOut,
     roleSheet, openRoleAccess, closeRoleAccess, unlockRole, applyRole, lockRole, simulateApproval,
   };

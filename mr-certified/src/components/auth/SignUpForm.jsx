@@ -14,7 +14,7 @@ import { Field, PasswordField, FormError } from './FormFields.jsx';
 import RolePicker from './RolePicker.jsx';
 import { ArrowLeftIcon } from '../ui/Icons.jsx';
 
-const STEP_TITLES = ['About you', 'Delivery address', 'How will you use MR Certified?'];
+const STEP_TITLES = ['Buyer basics', 'Delivery details (optional)', 'Your MERQO roles'];
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', phone: '', email: '', password: '',
@@ -95,6 +95,7 @@ export default function SignUpForm() {
 
       {step === 1 && (
         <React.Fragment>
+          <p className="af-note">Your buyer account is ready without an address. Add delivery details now, or save them for when you place an order.</p>
           <Field label="County" error={errors.county}>
             <select className="ai" value={form.county} onChange={set('county')} autoComplete="address-level1">
               <option value="">Select county</option>
@@ -127,6 +128,11 @@ export default function SignUpForm() {
         {step > 0 && (
           <button type="button" className="btn ghost af-back" onClick={() => { setErrors({}); setStep(step - 1); }} aria-label="Back">
             <ArrowLeftIcon size={18} />
+          </button>
+        )}
+        {step === 1 && (
+          <button type="button" className="btn ghost af-skip" onClick={() => { setErrors({}); setStep(2); }}>
+            Add later
           </button>
         )}
         <button type="submit" className="btn" disabled={busy}>
