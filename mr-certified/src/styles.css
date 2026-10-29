@@ -169,13 +169,6 @@ a{color:inherit;}
 .sug-main{display:flex;align-items:center;gap:9px;color:var(--sub);}
 .sug-main strong{color:var(--ink);}
 
-.mc-sortrow{position:relative;z-index:25;margin:0 16px 10px;}
-.mc-sort{width:100%;height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;font-size:13.5px;font-weight:600;color:var(--ink);transition:border-color .15s;}
-.mc-sort svg:first-child{color:var(--gold);}
-.mc-sort.open{border-color:var(--gold);}
-.mc-chev{margin-left:auto;color:var(--sub);transition:transform .18s;}
-.mc-sort.open .mc-chev{transform:rotate(180deg);}
-
 .mc-panel{margin:0 16px 10px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:18px;animation:popin .14s ease-out;}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .ffield{display:flex;flex-direction:column;gap:6px;min-width:0;}
@@ -194,7 +187,7 @@ a{color:inherit;}
 .mc-hint{display:flex;justify-content:space-between;gap:10px;margin:0 18px 10px;font-size:11.5px;color:var(--sub);line-height:1.4;}
 .mc-hint b{color:var(--gold);font-weight:600;white-space:nowrap;}
 .cats span{cursor:pointer;}
-.cats span:focus-visible,.mc-sort:focus-visible,.icon-btn:focus-visible,.menu-item:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.cats span:focus-visible,.icon-btn:focus-visible,.menu-item:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 
 .pop{position:relative;flex:0 0 auto;}
 .pop.block{width:100%;}
@@ -357,7 +350,7 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .mq-chat-empty{width:max-content;max-width:88%;margin:16px auto;padding:10px 14px;border:1px solid rgba(231,184,78,.2);border-radius:12px;background:#1a1d20;color:#d1c9b8;font-size:12px;text-align:center;}
 .mq-chat-bubble{position:relative;width:fit-content;max-width:84%;margin:0 0 10px;padding:11px 13px 22px;border:1px solid transparent;border-radius:15px;font-size:13px;line-height:1.45;overflow-wrap:anywhere;box-shadow:0 5px 14px rgba(0,0,0,.14);}
 .mq-chat-bubble.received{margin-right:auto;border-color:#343940;background:linear-gradient(145deg,#24282d,#1d2024);color:#f0eee8;border-bottom-left-radius:4px;}
-.mq-chat-bubble.sent{margin-left:auto;border-color:rgba(231,184,78,.55);background:linear-gradient(145deg,#eac866,#d4a83f);color:#191710;border-bottom-right-radius=4px;}
+.mq-chat-bubble.sent{margin-left:auto;border-color:rgba(231,184,78,.55);background:linear-gradient(145deg,#eac866,#d4a83f);color:#191710;border-bottom-right-radius:4px;}
 .mq-chat-time{position:absolute;right:9px;bottom:5px;color:rgba(235,231,219,.58);font-size:9px;}
 .mq-chat-bubble.sent .mq-chat-time{color:rgba(25,23,16,.6);}
 .mq-chat-shared-product{display:flex;align-items:center;gap:8px;min-width:210px;max-width:100%;margin-bottom:5px;padding:7px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(0,0,0,.16);cursor:pointer;}
@@ -395,9 +388,6 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .mc-kicker{color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.18em;}
 .mc-intro h1{margin-top:5px;font-size:23px;letter-spacing:-.04em;line-height:1.12;}
 .mc-intro p{margin-top:4px;color:var(--sub);font-size:11.5px;}
-.mc-sortrow{display:flex;align-items:center;min-height:34px;margin:0 16px 7px;}
-.mc-sortrow .pop.block{width:auto;}
-.mc-sort{width:auto;min-width:145px;height:34px;padding:0 10px;border-radius:10px;font-size:12px;}
 .mc-hint{margin-bottom:7px;font-size:10px;}
 .cats{gap:7px;padding-bottom:9px;}
 .cats span{padding:6px 11px;border-radius:8px;background:#17191c;font-size:11px;letter-spacing:.01em;}
@@ -444,7 +434,13 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .mc-intro{padding:4px 18px 9px;}
 .mc-intro h1{font-size:22px;}
 .mc-intro p{font-size:11px;}
-.market-spotlight{position:relative;display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;min-height:145px;margin:0 15px 11px;padding:10px;overflow:hidden;border:1px solid rgba(231,184,78,.28);border-radius:16px;background:radial-gradient(ellipse at 0% 100%,rgba(231,184,78,.12),transparent 58%),linear-gradient(115deg,#22201a,#17191c 62%);box-shadow:0 9px 26px rgba(0,0,0,.2);}
+.market-spotlight{position:relative;display:block;min-height:165px;margin:0 15px 11px;padding:10px 10px 27px;overflow:hidden;border:1px solid rgba(231,184,78,.28);border-radius:16px;background:radial-gradient(ellipse at 0% 100%,rgba(231,184,78,.12),transparent 58%),linear-gradient(115deg,#22201a,#17191c 62%);box-shadow:0 9px 26px rgba(0,0,0,.2);touch-action:pan-y;}
+.promo-track{display:flex;transition:transform .4s ease;}
+.promo-slide{display:grid;flex:0 0 100%;grid-template-columns:104px minmax(0,1fr);gap:12px;min-width:0;min-height:126px;}
+.promo-dots{position:absolute;right:0;bottom:9px;left:0;display:flex;justify-content:center;gap:6px;}
+.promo-dots button{width:7px;height:7px;padding:0;border-radius:50%;background:var(--sub);opacity:.55;}
+.promo-dots button.on{width:18px;border-radius:5px;background:var(--gold);opacity:1;}
+.promo-dots button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
 .spotlight-art{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:122px;overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:11px;background:linear-gradient(145deg,var(--art-a),var(--art-b));}
 .spotlight-art::before,.spotlight-art::after{position:absolute;content:"";border:1px solid rgba(255,255,255,.23);border-radius:50%;}
 .spotlight-art::before{width:91px;height:91px;top:17px;left:6px;box-shadow:0 0 0 9px rgba(255,255,255,.05),0 0 0 20px rgba(255,255,255,.04);}
@@ -469,13 +465,9 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .market-section-head h2{margin-top:2px;font-family:var(--font-head);font-size:15px;letter-spacing:-.02em;}
 .market-result-count{color:var(--sub);font-size:9px;}
 .market-edit-list{display:flex;gap:7px;overflow-x:auto;padding:1px 1px 5px;}
-.market-edit{display:flex;flex:0 0 154px;align-items:center;gap:8px;min-width:0;min-height:48px;padding:7px;border:1px solid #34383c;border-radius:10px;background:linear-gradient(120deg,#1d2022,#191b1e);text-align:left;}
-.market-edit.on{border-color:rgba(231,184,78,.67);background:linear-gradient(120deg,rgba(231,184,78,.14),#191b1e 76%);}
-.market-edit-mark{display:grid;flex:0 0 28px;width:28px;height:28px;place-items:center;border:1px solid rgba(231,184,78,.25);border-radius:8px;background:rgba(231,184,78,.08);color:var(--gold);font-size:16px;}
-.market-edit>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column;gap:2px;}
-.market-edit b{overflow:hidden;color:var(--ink);font-size:9px;text-overflow:ellipsis;white-space:nowrap;}
-.market-edit small{overflow:hidden;color:var(--sub);font-size:7px;text-overflow:ellipsis;white-space:nowrap;}
-.market-edit>i{color:var(--gold);font-size:11px;font-style:normal;}
+.market-edit{display:flex;flex:0 0 auto;align-items:center;min-height:36px;padding:0 13px;border:1px solid #34383c;border-radius:18px;background:var(--panel);text-align:center;white-space:nowrap;}
+.market-edit.on{border-color:rgba(231,184,78,.67);background:rgba(231,184,78,.14);}
+.market-edit b{color:var(--ink);font-size:11px;font-weight:600;}
 .market-edit:focus-visible,.market-budget:focus-visible,.spotlight-bottom button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 .market-budget{display:flex;width:100%;align-items:center;gap:9px;min-height:42px;margin-top:3px;padding:6px 9px;border:1px solid rgba(231,184,78,.22);border-radius:10px;background:linear-gradient(100deg,rgba(231,184,78,.09),rgba(231,184,78,.025));text-align:left;}
 .market-budget>span:first-child{display:grid;width:27px;height:27px;flex:0 0 auto;place-items:center;border-radius:8px;background:var(--gold);color:#17140c;font-family:var(--font-head);font-size:15px;font-weight:700;}
@@ -491,8 +483,9 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .market-card .market-art-stamp{font-size:5.5px;}
 .market-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;}
 .market-card:active{transform:translateY(-1px);border-color:rgba(231,184,78,.45);box-shadow:0 10px 24px rgba(0,0,0,.28);}
-@media (max-height:740px){.mc-intro{padding-top:2px;padding-bottom:6px;}.mc-intro h1{font-size:19px;}.mc-intro p{font-size:10px;}.market-spotlight{min-height:128px;padding:8px;grid-template-columns:88px minmax(0,1fr);}.spotlight-art{min-height:108px;}.spotlight-art::before{left:0;}.spotlight-art::after{left:21px;}.spotlight-orbit{left:27px;}.market-edits{margin-bottom:5px;}.market-edit{min-height:42px;}.market-budget{min-height:37px;}}
-@media (max-width:360px){.market-spotlight{grid-template-columns:88px minmax(0,1fr);gap:8px;margin-right:11px;margin-left:11px;}.spotlight-proof{gap:3px 6px;font-size:7px;}.market-edits{margin-right:11px;margin-left:11px;}.market-edit{flex-basis:143px;}}
+@media (max-height:740px){.mc-intro{padding-top:2px;padding-bottom:6px;}.mc-intro h1{font-size:19px;}.mc-intro p{font-size:10px;}.market-spotlight{min-height:145px;padding:8px 8px 25px;}.promo-slide{min-height:112px;grid-template-columns:88px minmax(0,1fr);}.spotlight-art{min-height:108px;}.spotlight-art::before{left:0;}.spotlight-art::after{left:21px;}.spotlight-orbit{left:27px;}.market-edits{margin-bottom:5px;}.market-edit{min-height:42px;}.market-budget{min-height:37px;}}
+@media (max-width:360px){.market-spotlight{margin-right:11px;margin-left:11px;}.promo-slide{grid-template-columns:88px minmax(0,1fr);gap:8px;}.spotlight-proof{gap:3px 6px;font-size:7px;}.market-edits{margin-right:11px;margin-left:11px;}.market-edit{flex-basis:143px;}}
+@media (prefers-reduced-motion:reduce){.promo-track{transition:none;}}
 @media (prefers-reduced-motion:reduce){.market-card{transition:none;}}
 .market-section-actions{display:flex;align-items:center;gap:7px;}
 .market-budget{width:auto;min-height:28px;margin:0;padding:3px 6px;gap:4px;border-radius:8px;white-space:nowrap;}
@@ -618,7 +611,7 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 /* ===== light theme: make dark-theme-only text/borders readable (no colour clashes) ===== */
 :root[data-theme="light"] .btn.ghost,:root[data-theme="light"] .mini.ghost{color:var(--ink);}
 :root[data-theme="light"] .buyer-profile-actions .btn.ghost{border-color:#CFC9BA;}
-:root[data-theme="light"] .brand span,:root[data-theme="light"] .welcome-mark,:root[data-theme="light"] .welcome-period,:root[data-theme="light"] .welcome-eyebrow,:root[data-theme="light"] .trust-title,:root[data-theme="light"] .avatar-btn,:root[data-theme="light"] .mc-filterbtn,:root[data-theme="light"] .mc-sort svg:first-child,:root[data-theme="light"] .mc-hint b,:root[data-theme="light"] .menu-avatar,:root[data-theme="light"] .menu-item.on svg:first-child,:root[data-theme="light"] .mi-check,:root[data-theme="light"] .avatar-initials,:root[data-theme="light"] .rsb,:root[data-theme="light"] .rsb-demo,:root[data-theme="light"] .af-link,:root[data-theme="light"] .rp-ic,:root[data-theme="light"] .person .pa,:root[data-theme="light"] .mc-wordmark span,:root[data-theme="light"] .mc-edition b,:root[data-theme="light"] .mc-kicker,:root[data-theme="light"] .market-follow,:root[data-theme="light"] .market-actions button.market-like.on,:root[data-theme="light"] .market-dm,:root[data-theme="light"] .spotlight-label,:root[data-theme="light"] .spotlight-seller span,:root[data-theme="light"] .spotlight-bottom button,:root[data-theme="light"] .market-edit-mark,:root[data-theme="light"] .market-edit>i,:root[data-theme="light"] .market-budget>i,:root[data-theme="light"] .market-list-heading,:root[data-theme="light"] .market-verified,:root[data-theme="light"] .buyer-card-top span:first-child,:root[data-theme="light"] .buyer-card-kicker,:root[data-theme="light"] .buyer-eyebrow,:root[data-theme="light"] .buyer-connection-icon,:root[data-theme="light"] .buyer-connection>strong i,:root[data-theme="light"] .buyer-section-head>button,:root[data-theme="light"] .buyer-empty-mark,:root[data-theme="light"] .buyer-follow-empty>button,:root[data-theme="light"] .buyer-shop-name b span,:root[data-theme="light"] .buyer-private summary::after,:root[data-theme="light"] .buyer-edit-address,:root[data-theme="light"] .theme-toggle{color:#8A6413;}
+:root[data-theme="light"] .brand span,:root[data-theme="light"] .welcome-mark,:root[data-theme="light"] .welcome-period,:root[data-theme="light"] .welcome-eyebrow,:root[data-theme="light"] .trust-title,:root[data-theme="light"] .avatar-btn,:root[data-theme="light"] .mc-filterbtn,:root[data-theme="light"] .mc-sort svg:first-child,:root[data-theme="light"] .mc-hint b,:root[data-theme="light"] .menu-avatar,:root[data-theme="light"] .menu-item.on svg:first-child,:root[data-theme="light"] .mi-check,:root[data-theme="light"] .avatar-initials,:root[data-theme="light"] .rsb,:root[data-theme="light"] .rsb-demo,:root[data-theme="light"] .af-link,:root[data-theme="light"] .rp-ic,:root[data-theme="light"] .person .pa,:root[data-theme="light"] .mc-wordmark span,:root[data-theme="light"] .mc-edition b,:root[data-theme="light"] .mc-kicker,:root[data-theme="light"] .market-follow,:root[data-theme="light"] .market-actions button.market-like.on,:root[data-theme="light"] .market-dm,:root[data-theme="light"] .spotlight-label,:root[data-theme="light"] .spotlight-seller span,:root[data-theme="light"] .spotlight-bottom button,:root[data-theme="light"] .market-budget>i,:root[data-theme="light"] .market-list-heading,:root[data-theme="light"] .market-verified,:root[data-theme="light"] .buyer-card-top span:first-child,:root[data-theme="light"] .buyer-card-kicker,:root[data-theme="light"] .buyer-eyebrow,:root[data-theme="light"] .buyer-connection-icon,:root[data-theme="light"] .buyer-connection>strong i,:root[data-theme="light"] .buyer-section-head>button,:root[data-theme="light"] .buyer-empty-mark,:root[data-theme="light"] .buyer-follow-empty>button,:root[data-theme="light"] .buyer-shop-name b span,:root[data-theme="light"] .buyer-private summary::after,:root[data-theme="light"] .buyer-edit-address,:root[data-theme="light"] .theme-toggle{color:#8A6413;}
 :root[data-theme="light"] .empty-state p{color:#6A6F77;}
 :root[data-theme="light"] .mq-chat-type.product{color:#7A4DB8;}
 :root[data-theme="light"] .mq-chat-unfriend{color:#C4442F;}

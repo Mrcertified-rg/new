@@ -1,12 +1,12 @@
-import React, { useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import AccountMenu from './layout/AccountMenu.jsx';
 import ThemeToggle from './ui/ThemeToggle.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
 import {
-  SearchIcon, SlidersIcon, ChevronDownIcon, CheckIcon, CloseIcon, BellIcon, CartIcon,
-  PackageIcon, StarIcon, TagIcon, ResetIcon, FlameIcon, BagIcon, MessageIcon,
+  SearchIcon, SlidersIcon, ChevronDownIcon, CloseIcon, BellIcon,
+  StarIcon, ResetIcon, BagIcon, MessageIcon,
 } from './ui/Icons.jsx';
 
 /* ---------- search helpers ---------- */
@@ -64,22 +64,30 @@ function scoreProduct(product, terms, query) {
 }
 
 /* ---------- filter / sort config ---------- */
-const CATEGORY_EDITS = [
-  { category: 'Shoes', title: 'Street rotation', note: 'Pairs with a point of view' },
-  { category: 'Men', title: 'Everyday layers', note: 'Easy pieces, made to wear' },
-  { category: 'Beauty', title: 'Soft life', note: 'Small rituals, good energy' },
-  { category: 'Kids', title: 'Little legends', note: 'Good finds for growing days' },
+const CATEGORY_TABS = [
+  { value: 'For You', label: 'For You' },
+  { value: 'Women', label: 'Women' },
+  { value: 'Men', label: 'Men' },
+  { value: 'Kids', label: 'Kids' },
+  { value: 'Beauty', label: 'Beauty' },
+  { value: 'Shoes', label: 'Shoes' },
+  { value: 'Accessories', label: 'Accessories' },
+  { value: 'Home & Household', label: 'Home & household' },
+  { value: 'Services', label: 'Services' },
 ];
 
-const CATS = ['For You', ...new Set(PRODUCTS.map(product => product.cat))];
-const SPOTLIGHT = [...PRODUCTS].sort((a, b) => b.rating - a.rating || b.orders - a.orders)[0];
+const PROMO_SLIDES = [
+  { product: PRODUCTS.find(product => product.id === 1), type: 'FEATURED SHOP', title: 'Find your next everyday favorite.' },
+  { product: PRODUCTS.find(product => product.id === 4), type: 'SHOP ANNOUNCEMENT', title: 'A little local care goes a long way.' },
+  { product: PRODUCTS.find(product => product.id === 6), type: 'POPULAR PICK', title: 'Good finds for growing days.' },
+].filter(slide => slide.product);
 
 const SORTS = [
-  { id: 'featured',   label: 'Featured',           icon: FlameIcon },
-  { id: 'price-asc',  label: 'Price: low to high', icon: TagIcon },
-  { id: 'price-desc', label: 'Price: high to low', icon: TagIcon },
-  { id: 'rating',     label: 'Top rated',          icon: StarIcon },
-  { id: 'orders',     label: 'Most orders',        icon: PackageIcon },
+  { id: 'featured',   label: 'Featured' },
+  { id: 'price-asc',  label: 'Price: low to high' },
+  { id: 'price-desc', label: 'Price: high to low' },
+  { id: 'rating',     label: 'Top rated' },
+  { id: 'orders',     label: 'Most orders' },
 ];
 
 const ALL_CITIES = [...new Set(PRODUCTS.map(p => p.city))].sort();
@@ -119,6 +127,9 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const [sort, setSort] = useState('featured');
   const [showSug, setShowSug] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [promoIndex, setPromoIndex] = useState(0);
+  const [promoPaused, setPromoPaused] = useState(false);
+  const promoTouchStart = useRef(null);
   const [city, setCity] = useState('any');
   const [color, setColor] = useState('any');
   const [size, setSize] = useState('any');
@@ -126,6 +137,14 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const [pmax, setPmax] = useState('');
 
   const barRef = useRef(null);
+
+  useEffect(() => {
+    if (promoPaused || PROMO_SLIDES.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const timer = window.setInterval(() => {
+      setPromoIndex(index => (index + 1) % PROMO_SLIDES.length);
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, [promoPaused, promoIndex]);
 
   // Collapse the intro / standout / mood block while scrolling down so more products fit on small screens;
   // bring it back as soon as the user scrolls up.
@@ -174,6 +193,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
 
   const terms = useMemo(() => getSearchTerms(query), [query]);
   const activeFilters = (city !== 'any' ? 1 : 0) + (color !== 'any' ? 1 : 0) + (size !== 'any' ? 1 : 0) + (pmin !== '' || pmax !== '' ? 1 : 0);
+  const activeOptions = activeFilters + (sort !== 'featured' ? 1 : 0);
 
   const list = useMemo(() => {
     const lo = pmin === '' ? null : Number(pmin);
@@ -211,9 +231,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const digits = v => v.replace(/[^0-9]/g, '');
   const isFiltering = !!query.trim() || activeFilters > 0 || catFilter !== 'For You';
   const showSpotlight = !isFiltering;
-  const categoryEdits = CATEGORY_EDITS.filter(edit => CATS.includes(edit.category));
-  const currentSort = SORTS.find(s => s.id === sort) || SORTS[0];
-  const SortCurrentIcon = currentSort.icon;
 
   return (
     <React.Fragment>
@@ -248,13 +265,13 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
 
         <button
           type="button"
-          className={'icon-btn mc-filterbtn' + (panelOpen || activeFilters ? ' on' : '')}
+          className={'icon-btn mc-filterbtn' + (panelOpen || activeOptions ? ' on' : '')}
           onClick={() => { setPanelOpen(o => !o); setShowSug(false); }}
-          aria-label="Filters"
+          aria-label="Filters and sorting"
           aria-expanded={panelOpen}
         >
           <SlidersIcon size={19} />
-          {activeFilters > 0 && <span className="mc-count">{activeFilters}</span>}
+          {activeOptions > 0 && <span className="mc-count">{activeOptions}</span>}
         </button>
 
         <Popover
@@ -270,11 +287,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
             <span>Order updates and seller replies will show up here.</span>
           </div>
         </Popover>
-
-        <button type="button" className="icon-btn" onClick={() => go('cart')} aria-label={'Cart, ' + cartCount + ' items'}>
-          <CartIcon size={19} />
-          {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-        </button>
 
         <AccountMenu go={go} mode={mode} onSwitchMode={onSwitchMode} cartCount={cartCount} />
 
@@ -296,35 +308,13 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
         )}
       </div>
 
-      {/* ---------- sort dropdown ---------- */}
-      <div className="mc-sortrow">
-        <Popover
-          align="left"
-          className="block"
-          trigger={({ open, toggle }) => (
-            <button type="button" className={'mc-sort' + (open ? ' open' : '')} onClick={toggle} aria-haspopup="listbox" aria-expanded={open}>
-              <SortCurrentIcon size={16} />
-              <span>{currentSort.label}</span>
-              <ChevronDownIcon size={18} className="mc-chev" />
-            </button>
-          )}
-        >
-          {({ close }) => SORTS.map(s => {
-            const Ico = s.icon;
-            return (
-              <button type="button" key={s.id} role="option" aria-selected={s.id === sort} className={'menu-item' + (s.id === sort ? ' on' : '')} onClick={() => { setSort(s.id); close(); }}>
-                <Ico size={16} /><span>{s.label}</span>
-                {s.id === sort && <CheckIcon size={16} className="mi-check" />}
-              </button>
-            );
-          })}
-        </Popover>
-      </div>
-
       {/* ---------- filters panel (opens in place, pushes content down) ---------- */}
       {panelOpen && (
         <div className="mc-panel" role="region" aria-label="Filters">
           <div className="fgrid">
+            <FilterSelect label="Sort by" value={sort} onChange={setSort}>
+              {SORTS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </FilterSelect>
             <FilterSelect label="Location" value={city} onChange={setCity}>
               <option value="any">All locations</option>
               {ALL_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -354,75 +344,99 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       <div className={'mc-collapsible' + (heroHidden ? ' is-hidden' : '')} ref={heroRef} aria-hidden={heroHidden}>
       <div className="mc-collapsible-inner">
       <div className="mc-intro">
-        <span className="mc-kicker">GOOD TASTE. SOLID PROOF.</span>
-        <h1>Find the one that feels like you.</h1>
         <p>Meet standout goods from Kenyan shops with a track record.</p>
       </div>
 
       {showSpotlight && (
-        <section className="market-spotlight" aria-label="MERQO standout pick">
-          <div className="spotlight-art" style={{ '--art-a': SPOTLIGHT.g[0], '--art-b': SPOTLIGHT.g[1] }} aria-hidden="true">
-            <span className="spotlight-orbit"></span>
-            <span className="spotlight-serial">MQ / PICK 001</span>
-            <span className="spotlight-category">{SPOTLIGHT.cat}</span>
+        <section
+          className="market-spotlight"
+          aria-label="Featured shop promotions"
+          aria-roledescription="carousel"
+          onMouseEnter={() => setPromoPaused(true)}
+          onMouseLeave={() => setPromoPaused(false)}
+          onFocusCapture={() => setPromoPaused(true)}
+          onBlurCapture={event => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setPromoPaused(false);
+          }}
+          onTouchStart={event => {
+            promoTouchStart.current = event.touches[0].clientX;
+            setPromoPaused(true);
+          }}
+          onTouchEnd={event => {
+            if (promoTouchStart.current === null) return;
+            const distance = event.changedTouches[0].clientX - promoTouchStart.current;
+            if (Math.abs(distance) > 40) {
+              setPromoIndex(index => (index + (distance < 0 ? 1 : -1) + PROMO_SLIDES.length) % PROMO_SLIDES.length);
+            }
+            promoTouchStart.current = null;
+            setPromoPaused(false);
+          }}
+          onTouchCancel={() => {
+            promoTouchStart.current = null;
+            setPromoPaused(false);
+          }}
+        >
+          <div className="promo-track" style={{ transform: `translateX(-${promoIndex * 100}%)` }}>
+            {PROMO_SLIDES.map((slide, index) => {
+              const product = slide.product;
+              return (
+                <article className="promo-slide" key={product.id} aria-hidden={index !== promoIndex} aria-label={`${slide.type}: ${product.seller}`}>
+                  <div className="spotlight-art" style={{ '--art-a': product.g[0], '--art-b': product.g[1] }} aria-hidden="true">
+                    <span className="spotlight-orbit"></span>
+                    <span className="spotlight-serial">MERQO / FEATURED</span>
+                    <span className="spotlight-category">{product.cat}</span>
+                  </div>
+                  <div className="spotlight-copy">
+                    <span className="spotlight-label"><StarIcon size={12} /> {slide.type}</span>
+                    <h2>{slide.title}</h2>
+                    <p className="spotlight-seller">{product.seller} <span>·</span> {product.city}</p>
+                    <div className="spotlight-proof">
+                      <span>★ {product.rating}</span>
+                      <span>{product.orders} completed orders</span>
+                    </div>
+                    <div className="spotlight-bottom">
+                      <b>{money(product.price)}</b>
+                      <button type="button" tabIndex={index === promoIndex ? 0 : -1} onClick={() => go('product', { pid: product.id })}>View find <span aria-hidden="true">↗</span></button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-          <div className="spotlight-copy">
-            <span className="spotlight-label"><StarIcon size={12} /> THE MERQO STANDOUT</span>
-            <h2>{SPOTLIGHT.name}</h2>
-            <p className="spotlight-seller">{SPOTLIGHT.seller} <span>·</span> {SPOTLIGHT.city}</p>
-            <div className="spotlight-proof">
-              <span>★ {SPOTLIGHT.rating}</span>
-              <span>{SPOTLIGHT.orders} completed orders</span>
-              <span>{SPOTLIGHT.delivery}% delivery rate</span>
-            </div>
-            <div className="spotlight-bottom">
-              <b>{money(SPOTLIGHT.price)}</b>
-              <button type="button" onClick={() => go('product', { pid: SPOTLIGHT.id })}>Meet the find <span aria-hidden="true">↗</span></button>
-            </div>
+          <div className="promo-dots" aria-label="Choose a featured promotion">
+            {PROMO_SLIDES.map((slide, index) => (
+              <button
+                type="button"
+                key={slide.product.id}
+                className={index === promoIndex ? 'on' : ''}
+                aria-label={`Show promotion ${index + 1}: ${slide.type}`}
+                aria-pressed={index === promoIndex}
+                onClick={() => setPromoIndex(index)}
+              />
+            ))}
           </div>
         </section>
       )}
 
-      {/* ---------- mood-led discovery ---------- */}
-      <section className="market-edits" aria-label="Shop by mood">
-        <div className="market-section-head">
-          <div><span className="mc-kicker">YOUR VIBE, YOUR FINDS</span><h2>Shop by mood</h2></div>
-          <div className="market-section-actions">
-            {isFiltering && <span className="market-result-count">{list.length} result{list.length === 1 ? '' : 's'}</span>}
-            <button
-              type="button"
-              className={'market-budget' + (pmax === '2500' && pmin === '' ? ' on' : '')}
-              aria-pressed={pmax === '2500' && pmin === ''}
-              onClick={() => {
-                const active = pmax === '2500' && pmin === '';
-                setPmin('');
-                setPmax(active ? '' : '2500');
-                setSort('price-asc');
-              }}
-            >
-              <span>₭</span><b>Under 2.5k</b><i>{pmax === '2500' && pmin === '' ? '✓' : '↗'}</i>
-            </button>
+      {/* ---------- curated categories ---------- */}
+      <section className="market-edits" aria-label="Product categories">
+        {isFiltering && (
+          <div className="market-section-head">
+            <div className="market-section-actions">
+              <span className="market-result-count">{list.length} result{list.length === 1 ? '' : 's'}</span>
+            </div>
           </div>
-        </div>
+        )}
         <div className="market-edit-list">
-          <button
-            type="button"
-            className={'market-edit market-edit-all' + (catFilter === 'For You' ? ' on' : '')}
-            onClick={() => setCatFilter('For You')}
-            aria-pressed={catFilter === 'For You'}
-          >
-            <span className="market-edit-mark">✳</span><span><b>Surprise me</b><small>The whole good list</small></span><i>↗</i>
-          </button>
-          {categoryEdits.map((edit, index) => (
+          {CATEGORY_TABS.map(category => (
             <button
               type="button"
-              key={edit.category}
-              className={'market-edit market-edit-' + index + (edit.category === catFilter ? ' on' : '')}
-              onClick={() => setCatFilter(edit.category)}
-              aria-pressed={edit.category === catFilter}
+              key={category.value}
+              className={'market-edit' + (category.value === catFilter ? ' on' : '')}
+              onClick={() => setCatFilter(category.value)}
+              aria-pressed={category.value === catFilter}
             >
-              <span className="market-edit-mark">{['◌', '▧', '✷', '⌂'][index]}</span>
-              <span><b>{edit.title}</b><small>{edit.note}</small></span><i>↗</i>
+              <b>{category.label}</b>
             </button>
           ))}
         </div>
