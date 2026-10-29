@@ -174,6 +174,15 @@ export async function registerUser(form) {
     createdAt: new Date().toISOString(),
   };
   saveUsers([...users, user]);
+  // Seller / Marketer details typed during sign-up are saved per role, so those modes open straight away.
+  for (const role of ['seller', 'marketer']) {
+    const b = form.roleChoices?.[role]?.biz;
+    if (form.roleChoices?.[role]?.on && b) {
+      saveBusinessProfile(user.id, {
+        role, name: b.name.trim(), id: b.id.trim(), kra: b.kra.trim().toUpperCase(), phone: normalizePhone(b.phone),
+      });
+    }
+  }
   startSession(user.id);
   return toPublicUser(user);
 }
@@ -277,10 +286,15 @@ export async function setRoleStatusDemo(userId, role, status) {
 
 /* --------------------- seller / marketer business info --------------------- */
 /** Keeps the details typed in the existing "create seller account" screen. */
-export const getBusinessProfile = (userId) => read(KEYS.business, {})[userId] || null;
+/** Each role (seller / marketer) keeps its own details. Older saves held one profile ({ role, ... }). */
+const profilesByRole = (entry) => (!entry ? {} : entry.role ? { [entry.role]: entry } : entry);
+export const getBusinessProfile = (userId, role) => {
+  const byRole = profilesByRole(read(KEYS.business, {})[userId]);
+  return byRole[role] || null;
+};
 export function saveBusinessProfile(userId, profile) {
   const all = read(KEYS.business, {});
-  all[userId] = profile;
+  all[userId] = { ...profilesByRole(all[userId]), [profile.role]: profile };
   write(KEYS.business, all);
 }
 

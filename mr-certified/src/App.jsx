@@ -64,7 +64,7 @@ function AppInner() {
   const [catFilter, setCatFilter] = useState('For You');
   const [sizeSel, setSizeSel] = useState(null);
   const [modal, setModal] = useState(null);
-  const [sellerAccount, setSellerAccount] = useState(() => (user ? getBusinessProfile(user.id) : null));
+  const [sellerAccount, setSellerAccount] = useState(() => (user ? getBusinessProfile(user.id, 'seller') : null));
   const [storeTheme, setStoreTheme] = useState('#E7B84E');
   const [transactions, setTransactions] = useState(INIT_TX);
   const [promotedTag, setPromotedTag] = useState(null);
@@ -113,8 +113,10 @@ function AppInner() {
     }
     openRoleAccess(role, () => {
       setModeRaw(role);
-      // First time in: collect business details with the existing setup screen.
-      if (!getBusinessProfile(user.id)) navigate('sellercreate');
+      // First time in as THIS role: collect that role's own business details.
+      const profile = getBusinessProfile(user.id, role);
+      setSellerAccount(profile);
+      if (!profile) navigate('sellercreate');
       else navigate(target || HOME[role]);
     });
   };
@@ -163,7 +165,7 @@ function AppInner() {
     if (!user) {
       setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setFollowing([]); setChatUid(null); setShareFor(null); setSellerAccount(null);
     } else {
-      setSellerAccount(getBusinessProfile(user.id));
+      setSellerAccount(getBusinessProfile(user.id, 'seller'));
       setFollowing(listFollowedSellers(user.id));
     }
   }, [user?.id]);
@@ -295,7 +297,7 @@ function AppInner() {
         <button type="button" className="icon-btn" onClick={leaveRole} aria-label="Back to marketplace"><ArrowLeftIcon size={19} /></button>
         <span className="pill">Back to marketplace</span>
       </div>
-      <SellerCreate onCreate={createAccount} />
+      <SellerCreate key={elevatedRole || 'seller'} role={elevatedRole === 'marketer' ? 'marketer' : 'seller'} onCreate={createAccount} />
     </React.Fragment>
   );
   // MC - cart actions and order tracking

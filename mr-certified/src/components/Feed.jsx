@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import AccountMenu from './layout/AccountMenu.jsx';
+import ThemeToggle from './ui/ThemeToggle.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
 import {
   SearchIcon, SlidersIcon, ChevronDownIcon, CheckIcon, CloseIcon, BellIcon, CartIcon,
@@ -95,6 +96,10 @@ const FilterSelect = ({ label, value, onChange, children }) => (
   </label>
 );
 
+// Intro/standout/mood block: how far to scroll down before it hides, and how far to scroll back up (long lists) before it returns
+const HERO_HIDE_AFTER_PX = 12;
+const HERO_REVEAL_UP_PX = 360;
+
 export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0, following = [], onFollow }) {
   const { requireAuth } = useAuth();
   const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
@@ -121,6 +126,49 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const [pmax, setPmax] = useState('');
 
   const barRef = useRef(null);
+
+  // Collapse the intro / standout / mood block while scrolling down so more products fit on small screens;
+  // bring it back as soon as the user scrolls up.
+  const [heroHidden, setHeroHidden] = useState(false);
+  const heroRef = useRef(null);
+  const lastScrollTop = useRef(0);
+  const heroLockUntil = useRef(0);
+
+  const upTravel = useRef(0);
+
+  const handleFeedScroll = useCallback((e) => {
+    const el = e.currentTarget;
+    const top = Math.max(0, el.scrollTop);
+    const delta = top - lastScrollTop.current;
+    lastScrollTop.current = top;
+
+    // ignore the scroll events caused by the collapse/expand animation itself
+    if (Date.now() < heroLockUntil.current) { upTravel.current = 0; return; }
+
+    // distance scrolled up in one go (resets whenever the user scrolls down again)
+    if (delta < 0) upTravel.current += -delta;
+    else if (delta > 0) upTravel.current = 0;
+
+    const room = el.scrollHeight - el.clientHeight;          // how far the list can scroll
+    const manyProducts = room > el.clientHeight * 2;         // long list vs. just a few products
+
+    if (heroHidden) {
+      // few products: only come back at the very top; many products: come back after ~3 upward swipes
+      if (top <= 4 || (manyProducts && upTravel.current >= HERO_REVEAL_UP_PX)) {
+        setHeroHidden(false);
+        heroLockUntil.current = Date.now() + 400;
+        upTravel.current = 0;
+      }
+    } else if (delta > 2 && top > HERO_HIDE_AFTER_PX) {
+      // hide as soon as the first products have moved up a little, if the list stays scrollable afterwards
+      const heroH = heroRef.current ? heroRef.current.offsetHeight : 0;
+      if (room > heroH + 80) {
+        setHeroHidden(true);
+        heroLockUntil.current = Date.now() + 400;
+        upTravel.current = 0;
+      }
+    }
+  }, [heroHidden]);
   const closeSug = useCallback(() => setShowSug(false), []);
   useOutside(barRef, closeSug, showSug);
 
@@ -171,7 +219,10 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
     <React.Fragment>
       <div className="mc-masthead">
         <div className="mc-wordmark">MERQO<span>.</span></div>
-        <div className="mc-edition"><span>THE BUYER'S EDIT</span><b>KENYA · 001</b></div>
+        <div className="mc-masthead-right">
+          <div className="mc-edition"><span>THE BUYER'S EDIT</span><b>KENYA · 001</b></div>
+          <ThemeToggle />
+        </div>
       </div>
       {/* ---------- top bar: search + filters + actions ---------- */}
       <div className="mc-bar" ref={barRef}>
@@ -300,6 +351,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
         </div>
       )}
 
+      <div className={'mc-collapsible' + (heroHidden ? ' is-hidden' : '')} ref={heroRef} aria-hidden={heroHidden}>
+      <div className="mc-collapsible-inner">
       <div className="mc-intro">
         <span className="mc-kicker">GOOD TASTE. SOLID PROOF.</span>
         <h1>Find the one that feels like you.</h1>
@@ -369,21 +422,22 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               aria-pressed={edit.category === catFilter}
             >
               <span className="market-edit-mark">{['◌', '▧', '✷', '⌂'][index]}</span>
-              <span><b>{edit.title}</b><small>{edit.note}</small></span>
-              <i>↗</i>
+              <span><b>{edit.title}</b><small>{edit.note}</small></span><i>↗</i>
             </button>
           ))}
         </div>
       </section>
+      </div>
+      </div>
 
       {/* ---------- feed ---------- */}
-      <div className="screen market-feed">
+      <div className="screen market-feed" onScroll={handleFeedScroll}>
         {!isFiltering && <div className="market-list-heading"><span>THE GOOD STUFF</span><span>{list.length} finds, no filler</span></div>}
         {list.length === 0 ? (
           <div className="empty-state">
             <SearchIcon size={28} />
             <h3>No products found</h3>
-            <p>Try a shorter search such as “Nike”, “sneakers”, or “beauty”, or loosen your filters.</p>
+            <p>Try a shorter search such as "Nike", "sneakers", or "beauty", or loosen your filters.</p>
             <button
               type="button"
               className="btn ghost"

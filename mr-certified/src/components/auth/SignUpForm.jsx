@@ -20,7 +20,8 @@ const EMPTY_FORM = {
   firstName: '', lastName: '', phone: '', email: '', password: '',
   county: '', town: '', area: '', landmark: '', altPhone: '', notes: '',
 };
-const EMPTY_CHOICE = { on: false, mode: 'same', password: '' };
+const EMPTY_BIZ = { name: '', id: '', kra: '', phone: '' };
+const EMPTY_CHOICE = { on: false, mode: 'same', password: '', biz: EMPTY_BIZ };
 
 export default function SignUpForm() {
   const { signUp, setSheetView } = useAuth();

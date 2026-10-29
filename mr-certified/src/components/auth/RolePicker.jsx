@@ -7,6 +7,7 @@
 import React from 'react';
 import { BagIcon, StoreIcon, MegaphoneIcon, CheckIcon } from '../ui/Icons.jsx';
 import RoleCredentialChoice from './RoleCredentialChoice.jsx';
+import RoleBusinessFields from './RoleBusinessFields.jsx';
 
 const OPTIONS = [
   { id: 'seller', label: 'Seller', icon: StoreIcon, text: 'List products and run your store.' },
@@ -35,6 +36,7 @@ export default function RolePicker({ choices, onChange, errors }) {
               <span className="rp-check">{c.on && <CheckIcon size={16} />}</span>
             </button>
             {c.on && <RoleCredentialChoice role={id} value={c} onChange={(v) => update(id, v)} error={errors[id]} />}
+            {c.on && <RoleBusinessFields role={id} value={c.biz} onChange={(biz) => update(id, { biz })} errors={errors[id + 'Biz']} />}
           </div>
         );
       })}

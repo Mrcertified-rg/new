@@ -60,14 +60,22 @@ export function validateDeliveryStep(f) {
   return e;
 }
 
-/** Step 3: only checks passwords of roles that chose a separate login. */
+/** Step 3: checks the separate-login password and the verification details of every ticked role. */
 export function validateRoleChoices(choices) {
   const e = {};
   Object.entries(choices).forEach(([role, c]) => {
-    if (c.on && c.mode === 'separate') {
+    if (!c.on) return;
+    if (c.mode === 'separate') {
       const p = passwordProblem(c.password);
       if (p) e[role] = p;
     }
+    const b = c.biz || {};
+    const biz = {};
+    if (String(b.name || '').trim().length < 2) biz.name = role === 'marketer' ? 'Enter your marketer name.' : 'Enter your business name.';
+    if (String(b.id || '').trim().length < 5) biz.id = 'Enter your National ID number.';
+    if (String(b.kra || '').trim().length < 8) biz.kra = 'Enter your KRA PIN, e.g. A012345678B.';
+    if (!normalizePhone(b.phone)) biz.phone = 'Use a Kenyan number, e.g. 0712 345 678.';
+    if (Object.keys(biz).length) e[role + 'Biz'] = biz;
   });
   return e;
 }
