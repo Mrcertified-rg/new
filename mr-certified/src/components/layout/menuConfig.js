@@ -12,6 +12,8 @@ export const MENU_BY_MODE = {
   seller: [
     { label: 'Dashboard', screen: 'dash', icon: 'grid' },
     { label: 'Products', screen: 'sellerproducts', icon: 'box' },
+    { label: 'Orders', screen: 'sellerorders', icon: 'orders' },
+    { label: 'Customers', screen: 'customers', icon: 'user' },
     { label: 'Records', screen: 'records', icon: 'records' },
     { label: 'Marketing', screen: 'marketing', icon: 'megaphone' },
     { label: 'Inbox', screen: 'inbox', icon: 'inbox' },

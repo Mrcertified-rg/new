@@ -8,6 +8,8 @@ import Orders from './components/Orders.jsx';
 import BuyerProfile from './components/BuyerProfile.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import SellerProducts from './components/SellerProducts.jsx';
+import SellerOrders from './components/SellerOrders.jsx';
+import Customers from './components/Customers.jsx';
 import Marketing from './components/Marketing.jsx';
 import CertifiedAI from './components/CertifiedAI.jsx';
 import SellerSettings from './components/SellerSettings.jsx';
@@ -26,6 +28,7 @@ import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
 import AppBar from './components/layout/AppBar.jsx';
 import BuyerNav from './components/layout/BuyerNav.jsx';
+import SellerNav from './components/layout/SellerNav.jsx';
 import RoleStatusBanner from './components/auth/RoleStatusBanner.jsx';
 import { ArrowLeftIcon } from './components/ui/Icons.jsx';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
@@ -41,7 +44,7 @@ import { listFollowedSellers, toggleFollowedSeller } from './social/socialServic
 const HOME = { buyer: 'feed', seller: 'dash', marketer: 'mfeed' };
 
 /** Screens that only an UNLOCKED seller / marketer may open. */
-const SELLER_SCREENS = ['dash', 'sellerproducts', 'records', 'marketing', 'ai', 'sellerprofilepage', 'inbox'];
+const SELLER_SCREENS = ['dash', 'sellerproducts', 'sellerorders', 'customers', 'records', 'marketing', 'ai', 'sellerprofilepage', 'inbox'];
 const MARKETER_SCREENS = ['mfeed', 'mypromos'];
 const roleOfScreen = (s) => (SELLER_SCREENS.includes(s) ? 'seller' : MARKETER_SCREENS.includes(s) ? 'marketer' : null);
 
@@ -263,9 +266,20 @@ function AppInner() {
   const selectedTotal = selectedItems.reduce((s, c) => s + PRODUCTS.find((x) => x.id === c.pid).price * c.qty, 0);
   const placeSelectedOrders = () => {
     const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    const newOrders = selectedItems.map((c, n) => ({ id: Date.now() + n, pid: c.pid, size: c.size, qty: c.qty, date, stage: 0 }));
+    const customer = user ? {
+      id: user.id,
+      name: [user.firstName, user.lastName].filter(Boolean).join(' '),
+      email: user.email || '',
+      phone: user.phone || '',
+    } : null;
+    const newOrders = selectedItems.map((c, n) => ({ id: Date.now() + n, pid: c.pid, size: c.size, qty: c.qty, date, stage: 0, customer }));
     setOrders((o) => [...newOrders, ...o]);
     setCart((c) => c.filter((x) => !x.checked));
+  };
+  const advanceSellerOrder = (orderId, stage) => {
+    setOrders((current) => current.map((order) => (
+      order.id === orderId ? { ...order, stage: Math.max(order.stage, stage) } : order
+    )));
   };
 
   const sendDm = (productId, from, text) => {
@@ -327,8 +341,10 @@ function AppInner() {
   // MC - provide order history and product navigation to tracking
   else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
   else if (screen === 'buyerprofile') body = withBar(<BuyerProfile go={go} openChat={openChat} profileId={pid} profile={pid ? getPerson(pid) : null} />);
-  else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} />);
-  else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} />);
+  else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} orders={orders} openModal={openModal} sellerName={sellerAccount?.name} />);
+  else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} go={go} sellerName={sellerAccount?.name} />);
+  else if (screen === 'sellerorders') body = withBar(<SellerOrders orders={orders} onAdvanceOrder={advanceSellerOrder} sellerName={sellerAccount?.name} />);
+  else if (screen === 'customers') body = withBar(<Customers orders={orders} sellerName={sellerAccount?.name} />);
   else if (screen === 'records') body = withBar(<Records transactions={transactions} addTx={addTx} />);
   else if (screen === 'marketing') body = withBar(<Marketing />);
   else if (screen === 'ai') body = withBar(<CertifiedAI />);
@@ -338,6 +354,7 @@ function AppInner() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {body}
       {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile', 'product'].includes(screen) && <BuyerNav screen={screen} go={go} goHome={goHome} cartCount={cartCount} />}
+      {mode === 'seller' && elevatedRole === 'seller' && ['dash', 'sellerproducts', 'sellerorders', 'customers', 'records', 'marketing', 'ai', 'sellerprofilepage', 'inbox'].includes(screen) && <SellerNav screen={screen} go={go} />}
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}

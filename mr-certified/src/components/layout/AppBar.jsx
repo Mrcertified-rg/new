@@ -20,6 +20,8 @@ const PAGE_TITLES = {
   sellerprofile: 'Store',
   dash: 'Dashboard',
   sellerproducts: 'Products',
+  sellerorders: 'Orders',
+  customers: 'Customers',
   records: 'Records',
   marketing: 'Marketing',
   ai: 'Certified AI',
