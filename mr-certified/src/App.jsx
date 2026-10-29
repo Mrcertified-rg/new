@@ -314,7 +314,7 @@ function AppInner() {
   );
   // MC - cart actions and order tracking
   else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={setShareFor} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} liked={liked} onToggleLike={toggleLike} />;
-  else if (screen === 'reels') body = withBar(<Reels go={go} addToCart={addToCart} />);
+  else if (screen === 'reels') body = <Reels go={go} addToCart={addToCart} liked={liked} onToggleLike={toggleLike} onComment={setCommentPid} commentCount={commentCount} onShare={setShareFor} following={following} onFollow={toggleFollow} />;
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
   else if (screen === 'product') body = withBar(<ProductDetail pid={pid} go={go} onBack={goBack} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} liked={liked.includes(pid)} onToggleLike={() => toggleLike(pid)} />);
