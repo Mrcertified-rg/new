@@ -77,10 +77,40 @@ const CATEGORY_TABS = [
 ];
 
 const PROMO_SLIDES = [
-  { product: PRODUCTS.find(product => product.id === 1), type: 'FEATURED SHOP', title: 'Find your next everyday favorite.' },
-  { product: PRODUCTS.find(product => product.id === 4), type: 'SHOP ANNOUNCEMENT', title: 'A little local care goes a long way.' },
-  { product: PRODUCTS.find(product => product.id === 6), type: 'POPULAR PICK', title: 'Good finds for growing days.' },
-].filter(slide => slide.product);
+  {
+    type: 'AD SPOTLIGHT',
+    badge: 'For sellers',
+    title: 'Reach more buyers with MERQO ads.',
+    body: 'Promote your shop, flash sale, or new drop to people actively buying right now.',
+    cta: 'Boost your shop',
+    seller: 'MERQO partner ads',
+    city: 'Across Kenya',
+    price: 'From KSh 500',
+    colors: ['#E7B84E', '#2F2A24'],
+  },
+  {
+    type: 'FLASH SALE',
+    badge: 'Hot deal',
+    title: 'Fresh finds are selling fast tonight.',
+    body: 'Daily drops, surprise bundles, and limited offers from trusted sellers.',
+    cta: 'See deals',
+    seller: 'Today’s deals',
+    city: 'Nairobi & online',
+    price: 'Up to 40% off',
+    colors: ['#E8615A', '#2A1717'],
+  },
+  {
+    type: 'SHOP ANNOUNCEMENT',
+    badge: 'Community',
+    title: 'New seller stories are live this week.',
+    body: 'Meet verified shops, local brands, and quick-moving offers built for everyday discovery.',
+    cta: 'Explore now',
+    seller: 'MERQO updates',
+    city: 'Kenya-wide',
+    price: 'Fresh picks',
+    colors: ['#4EA8E7', '#18272F'],
+  },
+];
 
 const SORTS = [
   { id: 'featured',   label: 'Featured' },
@@ -144,7 +174,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       setPromoIndex(index => (index + 1) % PROMO_SLIDES.length);
     }, 6000);
     return () => window.clearInterval(timer);
-  }, [promoPaused, promoIndex]);
+  }, [promoPaused]);
 
   // Collapse the intro / standout / mood block while scrolling down so more products fit on small screens;
   // bring it back as soon as the user scrolls up.
@@ -377,37 +407,34 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           }}
         >
           <div className="promo-track" style={{ transform: `translateX(-${promoIndex * 100}%)` }}>
-            {PROMO_SLIDES.map((slide, index) => {
-              const product = slide.product;
-              return (
-                <article className="promo-slide" key={product.id} aria-hidden={index !== promoIndex} aria-label={`${slide.type}: ${product.seller}`}>
-                  <div className="spotlight-art" style={{ '--art-a': product.g[0], '--art-b': product.g[1] }} aria-hidden="true">
-                    <span className="spotlight-orbit"></span>
-                    <span className="spotlight-serial">MERQO / FEATURED</span>
-                    <span className="spotlight-category">{product.cat}</span>
+            {PROMO_SLIDES.map((slide, index) => (
+              <article className="promo-slide" key={`${slide.type}-${index}`} aria-hidden={index !== promoIndex} aria-label={`${slide.type}: ${slide.seller}`}>
+                <div className="spotlight-art" style={{ '--art-a': slide.colors[0], '--art-b': slide.colors[1] }} aria-hidden="true">
+                  <span className="spotlight-orbit"></span>
+                  <span className="spotlight-serial">MERQO / {slide.badge.toUpperCase()}</span>
+                  <span className="spotlight-category">{slide.type}</span>
+                </div>
+                <div className="spotlight-copy">
+                  <span className="spotlight-label"><StarIcon size={12} /> {slide.type}</span>
+                  <h2>{slide.title}</h2>
+                  <p className="spotlight-seller">{slide.seller} <span>·</span> {slide.city}</p>
+                  <div className="spotlight-proof">
+                    <span>{slide.badge}</span>
+                    <span>{slide.price}</span>
                   </div>
-                  <div className="spotlight-copy">
-                    <span className="spotlight-label"><StarIcon size={12} /> {slide.type}</span>
-                    <h2>{slide.title}</h2>
-                    <p className="spotlight-seller">{product.seller} <span>·</span> {product.city}</p>
-                    <div className="spotlight-proof">
-                      <span>★ {product.rating}</span>
-                      <span>{product.orders} completed orders</span>
-                    </div>
-                    <div className="spotlight-bottom">
-                      <b>{money(product.price)}</b>
-                      <button type="button" tabIndex={index === promoIndex ? 0 : -1} onClick={() => go('product', { pid: product.id })}>View find <span aria-hidden="true">↗</span></button>
-                    </div>
+                  <div className="spotlight-bottom">
+                    <b>{slide.body}</b>
+                  <button type="button" tabIndex={index === promoIndex ? 0 : -1} onClick={() => go('marketing')}>{slide.cta} <span aria-hidden="true">↗</span></button>
                   </div>
-                </article>
-              );
-            })}
+                </div>
+              </article>
+            ))}
           </div>
           <div className="promo-dots" aria-label="Choose a featured promotion">
             {PROMO_SLIDES.map((slide, index) => (
               <button
                 type="button"
-                key={slide.product.id}
+                key={`${slide.type}-dot`}
                 className={index === promoIndex ? 'on' : ''}
                 aria-label={`Show promotion ${index + 1}: ${slide.type}`}
                 aria-pressed={index === promoIndex}
