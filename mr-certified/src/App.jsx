@@ -29,7 +29,7 @@ import BuyerNav from './components/layout/BuyerNav.jsx';
 import RoleStatusBanner from './components/auth/RoleStatusBanner.jsx';
 import { ArrowLeftIcon } from './components/ui/Icons.jsx';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
-import { getBusinessProfile, restoreSession, saveBusinessProfile } from './auth/authService.js';
+import { getBusinessProfile, getPerson, restoreSession, saveBusinessProfile } from './auth/authService.js';
 import { ROLE_LABEL } from './auth/config.js';
 import { listFollowedSellers, toggleFollowedSeller } from './social/socialService.js';
 
@@ -82,6 +82,7 @@ function AppInner() {
   const [commentPid, setCommentPid] = useState(null);
   const [dms, setDms] = useState({});
   const [toast, setToast] = useState(null);
+  const [liked, setLiked] = useState([]);
 
   const showToast = (m, ms = 1800) => { setToast(m); setTimeout(() => setToast(null), ms); };
 
@@ -99,7 +100,11 @@ function AppInner() {
   const goBack = () => {
     const prev = hist[hist.length - 1];
     if (prev) { setHist((h) => h.slice(0, -1)); setScreen(prev.screen); setPid(prev.pid); return; }
+  };
+  const goHome = () => {
+    setHist([]);
     setScreen(HOME[mode]);
+    setPid(null);
   };
 
   /**
@@ -242,6 +247,11 @@ function AppInner() {
     });
     showToast('Added to cart');
   });
+  const toggleLike = (productId) => requireAuth('like products', () => {
+    setLiked((current) => current.includes(productId)
+      ? current.filter((id) => id !== productId)
+      : [...current, productId]);
+  });
   const setQty = (i, d) => setCart(cart.map((c, k) => (k === i ? { ...c, qty: Math.max(1, c.qty + d) } : c)));
   const removeItem = (i) => setCart(cart.filter((c, k) => k !== i));
   // MC - selected cart items and order placement
@@ -303,20 +313,20 @@ function AppInner() {
     </React.Fragment>
   );
   // MC - cart actions and order tracking
-  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={setShareFor} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} />;
-  else if (screen === 'reels') body = <Reels go={go} addToCart={addToCart} />;
+  else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={setShareFor} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} liked={liked} onToggleLike={toggleLike} />;
+  else if (screen === 'reels') body = withBar(<Reels go={go} addToCart={addToCart} />);
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
-  else if (screen === 'product') body = <ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} />;
+  else if (screen === 'product') body = withBar(<ProductDetail pid={pid} go={go} onBack={goBack} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} liked={liked.includes(pid)} onToggleLike={() => toggleLike(pid)} />);
   else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} toggleItem={toggleItem} toggleAll={toggleAll} go={go} openModal={openModal} />);
-  else if (screen === 'dm') body = <Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />;
+  else if (screen === 'dm') body = withBar(<Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />);
   else if (screen === 'friends' && user) body = withBar(<Friends me={user} go={go} openChat={openChat} following={following} onFollow={toggleFollow} showToast={showToast} dms={dms} />);
   else if (screen === 'chat' && user && chatUid) body = withBar(<Chat me={user} otherId={chatUid} go={go} />);
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
   else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
-  else if (screen === 'buyerprofile') body = withBar(<BuyerProfile go={go} openChat={openChat} />);
+  else if (screen === 'buyerprofile') body = withBar(<BuyerProfile go={go} openChat={openChat} profileId={pid} profile={pid ? getPerson(pid) : null} />);
   else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} />);
   else if (screen === 'records') body = withBar(<Records transactions={transactions} addTx={addTx} />);
@@ -327,7 +337,7 @@ function AppInner() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {body}
-      {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile'].includes(screen) && <BuyerNav screen={screen} go={go} cartCount={cartCount} />}
+      {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile', 'product'].includes(screen) && <BuyerNav screen={screen} go={go} goHome={goHome} cartCount={cartCount} />}
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}

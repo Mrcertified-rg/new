@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 
-export default function ProductDetail({pid,go,sizeSel,setSizeSel,mode,promotedTag,onPromote,addToCart}){
+export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,mode,promotedTag,onPromote,addToCart,liked,onToggleLike}){
  const p=PRODUCTS.find(x=>x.id===pid);
+ if (!p) return null;
  const sel=sizeSel||p.sizes[0];
  const tagged=promotedTag&&promotedTag.productId===pid;
  return (
   <div className="screen">
-   <div className="pd-media" style={{background:`linear-gradient(160deg,${p.g[0]},${p.g[1]})`}}>
-    <button className="back" style={{position:'absolute',top:16,left:14,background:'rgba(0,0,0,.4)',borderRadius:'50%',padding:'6px 11px'}} onClick={()=>go(mode==='marketer'?'mfeed':'feed')}>←</button>
-   </div>
+   <div className="pd-media" style={{background:`linear-gradient(160deg,${p.g[0]},${p.g[1]})`}} />
    <div className="pd-body">
     <div className="row" onClick={()=>go('sellerprofile',{pid:p.id})}>
      <div style={{fontWeight:600}}>{p.seller} <span className="badge">✓</span></div>
@@ -44,7 +43,10 @@ export default function ProductDetail({pid,go,sizeSel,setSizeSel,mode,promotedTa
     </div>
    ) : (
     <div className="buybar">
-     <button className="btn ghost" style={{flex:1}} onClick={()=>go('feed')}>❤️ Save</button>
+     <button type="button" className={'market-like' + (liked ? ' on' : '')} style={{flex:1}} onClick={onToggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike product' : 'Like product'} title={liked ? 'Unlike' : 'Like'}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+      <span>{liked ? 'Liked' : 'Like'}</span>
+     </button>
      <button className="btn green" style={{flex:2}} onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart — {money(p.price)}</button>
     </div>
    )}

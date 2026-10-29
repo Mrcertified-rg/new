@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { initials } from '../data.js';
 import { PRODUCTS } from '../data.js';
 import { useAuth } from '../auth/AuthContext.jsx';
-import { KENYA_COUNTIES } from '../auth/config.js';
-import { applyThemePreference } from '../themePreference.js';
+import { KENYA_COUNTIES, KENYA_SUB_COUNTIES } from '../auth/config.js';
+import { applyThemePreference, getThemePreference } from '../themePreference.js';
 import { listChats, listFollowedSellers, fullName, personInitials } from '../social/socialService.js';
 import { ArrowRightIcon, CameraIcon, MessageIcon, StoreIcon, UserIcon } from './ui/Icons.jsx';
 
@@ -51,7 +51,7 @@ function resizeProfilePicture(file) {
   });
 }
 
-export default function BuyerProfile({ go, openChat }) {
+export default function BuyerProfile({ go, openChat, profileId, profile }) {
   const { user, saveBuyerProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [connectionsTab, setConnectionsTab] = useState('friends');
@@ -62,7 +62,7 @@ export default function BuyerProfile({ go, openChat }) {
   const [form, setForm] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || profileId) return;
     setForm({
       firstName: user.firstName || '',
       lastName: user.lastName || '',
@@ -70,12 +70,38 @@ export default function BuyerProfile({ go, openChat }) {
       email: user.email || '',
       phone: user.phone || '',
       profilePicture: user.profilePicture || '',
-      theme: user.theme || 'dark',
+      theme: getThemePreference(),
       currentPassword: '',
       newPassword: '',
       address: { ...EMPTY_ADDRESS, ...(user.address || {}) },
     });
-  }, [user]);
+  }, [user, profileId]);
+
+  useEffect(() => {
+    if (profileId) return undefined;
+    const syncTheme = (event) => {
+      const theme = event.detail === 'light' ? 'light' : 'dark';
+      setForm((current) => current ? { ...current, theme } : current);
+    };
+    window.addEventListener('merqo-theme-change', syncTheme);
+    return () => window.removeEventListener('merqo-theme-change', syncTheme);
+  }, [profileId]);
+
+  if (profileId && profile) {
+    return (
+      <div className="screen pad">
+        <div className="card buyer-card">
+          <div className="buyer-card-top">
+            <span className="buyer-connection-icon">{personInitials(profile)}</span>
+            <span>Buyer profile</span>
+          </div>
+          <h1>{fullName(profile)}</h1>
+          <p style={{ color: 'var(--sub)' }}>Connect with {fullName(profile)} through messages and friend requests.</p>
+          <button type="button" className="btn" onClick={() => openChat(profile.id)}>Message</button>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !form) return null;
 
@@ -91,7 +117,14 @@ export default function BuyerProfile({ go, openChat }) {
   };
   const setAddressField = (field) => (event) => {
     const value = event.target.value;
-    setForm((current) => ({ ...current, address: { ...current.address, [field]: value } }));
+    setForm((current) => ({
+      ...current,
+      address: {
+        ...current.address,
+        [field]: value,
+        ...(field === 'county' ? { town: '' } : {}),
+      },
+    }));
   };
   const choosePhoto = async (event) => {
     const file = event.target.files?.[0];
@@ -288,7 +321,12 @@ export default function BuyerProfile({ go, openChat }) {
                 </select>
               </label>
               <div className="buyer-editor-grid">
-                <label>Town / city<input value={form.address.town} onChange={setAddressField('town')} autoComplete="address-level2" /></label>
+                <label>Sub-county / Town
+                  <select value={form.address.town} onChange={setAddressField('town')} autoComplete="address-level2" disabled={!form.address.county}>
+                    <option value="">{form.address.county ? 'Select sub-county' : 'Select county first'}</option>
+                    {(KENYA_SUB_COUNTIES[form.address.county] || []).map((town) => <option key={town} value={town}>{town}</option>)}
+                  </select>
+                </label>
                 <label>Area / estate<input value={form.address.area} onChange={setAddressField('area')} /></label>
               </div>
               <label>Street, building or landmark<input value={form.address.landmark} onChange={setAddressField('landmark')} /></label>

@@ -2,11 +2,11 @@ import React from 'react';
 import { PRODUCTS, ORDER_STAGES, money } from '../data.js';
 import { ArrowLeftIcon } from './ui/Icons.jsx';
 
-export default function MyOrders({orders,go}){
+export default function MyOrders({orders,go,onBack}){
  return (
   <React.Fragment>
    <div className="topbar" style={{justifyContent:'flex-start',gap:12}}>
-    <button type="button" className="icon-btn" onClick={()=>go('feed')} aria-label="Back"><ArrowLeftIcon size={19}/></button>
+    <button type="button" className="icon-btn appbar-back" onClick={onBack || (() => go('feed'))} aria-label="Go back" title="Go back"><ArrowLeftIcon size={21}/></button>
     <h1>My orders</h1>
    </div>
    <div className="screen pad">

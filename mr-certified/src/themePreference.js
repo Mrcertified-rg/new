@@ -17,4 +17,5 @@ export function applyThemePreference(theme) {
   } catch {
     // Theme remains applied for this visit if storage is unavailable.
   }
+  window.dispatchEvent(new CustomEvent('merqo-theme-change', { detail: selectedTheme }));
 }

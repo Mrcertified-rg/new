@@ -8,7 +8,7 @@
  */
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext.jsx';
-import { KENYA_COUNTIES } from '../../auth/config.js';
+import { KENYA_COUNTIES, KENYA_SUB_COUNTIES } from '../../auth/config.js';
 import { validateAccountStep, validateDeliveryStep, validateRoleChoices } from '../../auth/validators.js';
 import { Field, PasswordField, FormError } from './FormFields.jsx';
 import RolePicker from './RolePicker.jsx';
@@ -32,7 +32,11 @@ export default function SignUpForm() {
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key) => (e) => setForm((f) => ({
+    ...f,
+    [key]: e.target.value,
+    ...(key === 'county' ? { town: '' } : {}),
+  }));
 
   const next = async (e) => {
     e.preventDefault();
@@ -104,8 +108,11 @@ export default function SignUpForm() {
             </select>
           </Field>
           <div className="af-two">
-            <Field label="City / Town" error={errors.town}>
-              <input className="ai" value={form.town} onChange={set('town')} autoComplete="address-level2" />
+            <Field label="Sub-county / Town" error={errors.town}>
+            <select className="ai" value={form.town} onChange={set('town')} autoComplete="address-level2" disabled={!form.county}>
+              <option value="">{form.county ? 'Select sub-county' : 'Select county first'}</option>
+              {(KENYA_SUB_COUNTIES[form.county] || []).map((town) => <option key={town} value={town}>{town}</option>)}
+            </select>
             </Field>
             <Field label="Area / Estate" error={errors.area}>
               <input className="ai" value={form.area} onChange={set('area')} />

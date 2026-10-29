@@ -137,20 +137,13 @@ const FilterSelect = ({ label, value, onChange, children }) => (
 const HERO_HIDE_AFTER_PX = 12;
 const HERO_REVEAL_UP_PX = 360;
 
-export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0, following = [], onFollow }) {
+export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode = 'buyer', onSwitchMode, addToCart, onShare, onComment, commentCount = () => 0, following = [], onFollow, liked = [], onToggleLike }) {
   const { requireAuth } = useAuth();
-  const [liked, setLiked] = useState([]); // demo-only: ids of products the buyer has saved this session
   const isLiked = (id) => liked.includes(id);
   const likeCount = (product) => product.orders * 4 + product.id * 13 + (isLiked(product.id) ? 1 : 0);
   const fmtCount = (count) => (count >= 1000 ? (count / 1000).toFixed(1).replace('.0', '') + 'k' : String(count));
 
-  const toggleLike = (id) => requireAuth('like products', () => {
-    if (liked.includes(id)) {
-      setLiked((current) => current.filter((productId) => productId !== id));
-      return;
-    }
-    setLiked((current) => [...current, id]);
-  });
+  const toggleLike = (id) => requireAuth('like products', () => onToggleLike?.(id));
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('featured');

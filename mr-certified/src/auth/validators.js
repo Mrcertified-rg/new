@@ -4,7 +4,7 @@
  * returns an object of { fieldName: 'message' }. An empty object means "valid".
  * NOTE: the server must repeat these checks - never trust the browser alone.
  */
-import { KENYA_COUNTIES } from './config.js';
+import { KENYA_COUNTIES, KENYA_SUB_COUNTIES } from './config.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const NAME_RE = /^[\p{L}][\p{L}\s'.-]{1,39}$/u;
@@ -54,7 +54,7 @@ export function validateAccountStep(f) {
 export function validateDeliveryStep(f) {
   const e = {};
   if (!KENYA_COUNTIES.includes(f.county)) e.county = 'Choose your county.';
-  if (f.town.trim().length < 2) e.town = 'Enter your city or town.';
+  if (!(KENYA_SUB_COUNTIES[f.county] || []).includes(f.town)) e.town = 'Choose a sub-county for the selected county.';
   if (f.area.trim().length < 2) e.area = 'Enter your area or estate.';
   if (f.altPhone.trim() && !normalizePhone(f.altPhone)) e.altPhone = 'Use a Kenyan number or leave blank.';
   return e;

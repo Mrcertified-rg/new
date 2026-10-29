@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PRODUCTS } from '../data.js';
 import { findPeople } from '../auth/authService.js';
 import {
@@ -6,9 +6,12 @@ import {
   listChats, listIncoming, listOutgoing, fullName, personInitials,
 } from '../social/socialService.js';
 
-function Person({ person, sub, children, className = '' }) {
+function Person({ person, sub, children, className = '', onClick }) {
   return (
-    <div className={'person mq-chat-person-row ' + className}>
+    <div className={'person mq-chat-person-row ' + className} onClick={(event) => {
+      if (event.target.closest('button')) return;
+      onClick?.();
+    }}>
       <span className="pa mq-chat-list-avatar">{personInitials(person)}</span>
       <div className="pi mq-chat-list-copy"><b>{fullName(person)}</b>{sub && <span>{sub}</span>}</div>
       {children}
@@ -19,6 +22,7 @@ function Person({ person, sub, children, className = '' }) {
 export default function Friends({ me, go, openChat, following = [], onFollow, showToast, dms = {} }) {
   const [tab, setTab] = useState('Chats');
   const [query, setQuery] = useState('');
+  const searchRef = useRef(null);
   const [, setTick] = useState(0);
   const bump = () => setTick((tick) => tick + 1);
 
@@ -36,7 +40,6 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
     .filter((product) => dms[product.id]?.length)
     .map((product) => ({ product, last: dms[product.id][dms[product.id].length - 1] }));
   const results = tab === 'Find people' ? findPeople(query, me.id) : [];
-  // MC - search seller stores by name, location, and the products they offer
   const searchTerm = query.trim().toLowerCase();
   const storeResults = tab === 'Find people' && searchTerm.length >= 2
     ? [...new Map(PRODUCTS.map((product) => [product.seller, product])).values()]
@@ -46,7 +49,7 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
           || product.city.toLowerCase().includes(searchTerm)
           || product.name.toLowerCase().includes(searchTerm))))
     : [];
-  const tabs = ['Chats', 'Requests', 'Find people', 'Sellers'];
+  const tabs = ['Chats', 'Requests'];
   const tabLabel = (name) => (name === 'Requests' && incoming.length ? 'Requests (' + incoming.length + ')' : name);
   const preview = (message) => {
     if (!message) return 'Say hi 👋';
@@ -56,7 +59,17 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
 
   return (
     <React.Fragment>
-      <div className="topbar"><h1>Friends &amp; chats</h1></div>
+      <div className="topbar friends-topbar">
+        <div className="cm-input" style={{ width: '100%' }}>
+          <input
+            ref={searchRef}
+            value={query}
+            placeholder="Search people or stores..."
+            aria-label="Find people"
+            onChange={(event) => { setQuery(event.target.value); if (tab !== 'Find people') setTab('Find people'); }}
+          />
+        </div>
+      </div>
       <div className="tabs sm">
         {tabs.map((name) => <span key={name} className={name === tab ? 'on' : ''} onClick={() => setTab(name)}>{tabLabel(name)}</span>)}
       </div>
@@ -67,7 +80,7 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
             {!chats.length && !productChats.length && (
               <div className="card" style={{ textAlign: 'center', color: 'var(--sub)', fontSize: 13.5 }}>
                 No friends yet. Tap <b>Find people</b> to search for a friend and send a request.
-                <div><button className="btn" style={{ marginTop: 12 }} onClick={() => setTab('Find people')}>Find people</button></div>
+                <div><button className="btn" style={{ marginTop: 12 }} onClick={() => { setTab('Find people'); searchRef.current?.focus(); }}>Find people</button></div>
               </div>
             )}
             {chats.length > 0 && <div className="mq-chat-section-label">FRIENDS CHATS</div>}
@@ -113,16 +126,13 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
 
         {tab === 'Find people' && (
           <React.Fragment>
-            <div className="cm-input" style={{ marginBottom: 8 }}>
-              <input value={query} placeholder="Search people or stores..." onChange={(event) => setQuery(event.target.value)} autoFocus />
-            </div>
-            {query.trim().length < 2 && <p style={{ color: 'var(--sub)', fontSize: 13 }}>Type at least 2 letters of their name.</p>}
+            {query.trim().length < 2 && <p style={{ color: 'var(--sub)', fontSize: 13 }}>Type at least 2 letters of their name or a store.</p>}
             {query.trim().length >= 2 && !results.length && !storeResults.length && <p style={{ color: 'var(--sub)', fontSize: 13 }}>No people or stores found.</p>}
             {results.length > 0 && <div className="menu-label" style={{ padding: '10px 0 4px' }}>PEOPLE</div>}
             {results.map((person) => {
               const status = relation(me.id, person.id);
               return (
-                <Person key={person.id} person={person}>
+                <Person key={person.id} person={person} className="mq-chat-person-link" onClick={() => go('buyerprofile', { pid: person.id })}>
                   {status === 'none' && <button type="button" className="mini green" onClick={() => { sendFriendRequest(me.id, person.id); showToast('Friend request sent'); bump(); }}>+ Add friend</button>}
                   {status === 'sent' && <button type="button" className="mini ghost" onClick={() => { removeLink(me.id, person.id); bump(); }}>Requested ✓</button>}
                   {status === 'received' && <button type="button" className="mini green" onClick={() => { acceptRequest(me.id, person.id); showToast('You are now friends'); bump(); }}>Accept</button>}
@@ -131,48 +141,17 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
               );
             })}
             {storeResults.length > 0 && <div className="menu-label" style={{ padding: '14px 0 4px' }}>SELLER STORES</div>}
-            {storeResults.map((store) => {
-              const isFollowing = following.includes(store.seller);
-              const productCount = PRODUCTS.filter((product) => product.seller === store.seller).length;
-              return (
-                <div className="person" key={store.seller}>
-                  <span className="pa" style={{ background: 'var(--gold)', color: '#101214' }}>
-                    {store.seller.split(' ').map((word) => word[0]).slice(0, 2).join('')}
-                  </span>
-                  <div className="pi" onClick={() => go('sellerprofile', { pid: store.id })} style={{ cursor: 'pointer' }}>
-                    <b>{store.seller} <span className="badge">✓</span></b>
-                    <span>{store.city} · {productCount} product{productCount === 1 ? '' : 's'} · View store ›</span>
-                  </div>
-                  <button type="button" className={'mini ' + (isFollowing ? 'ghost' : 'green')} onClick={() => onFollow && onFollow(store.seller)}>
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </button>
+            {storeResults.map((store) => (
+              <div className="person mq-chat-person-row" key={store.seller} onClick={() => go('sellerprofile', { pid: store.id })} style={{ cursor: 'pointer' }}>
+                <span className="pa mq-chat-list-avatar" style={{ background: 'var(--gold)', color: '#101214' }}>
+                  {store.seller.split(' ').map((word) => word[0]).slice(0, 2).join('')}
+                </span>
+                <div className="pi mq-chat-list-copy">
+                  <b>{store.seller} <span className="badge">✓</span></b>
+                  <span>{store.city} · View store ›</span>
                 </div>
-              );
-            })}
-          </React.Fragment>
-        )}
-
-        {tab === 'Sellers' && (
-          <React.Fragment>
-            {!following.length && (
-              <div className="card" style={{ color: 'var(--sub)', fontSize: 13.5 }}>
-                You are not following any seller yet. Tap the <b>+</b> on a seller's picture in the feed to follow them.
               </div>
-            )}
-            {following.map((name) => {
-              const product = PRODUCTS.find((item) => item.seller === name);
-              if (!product) return null;
-              return (
-                <div className="person" key={name}>
-                  <span className="pa" style={{ background: 'var(--gold)', color: '#101214' }}>{name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span>
-                  <div className="pi" onClick={() => go('sellerprofile', { pid: product.id })} style={{ cursor: 'pointer' }}>
-                    <b>{name} <span className="badge">✓</span></b><span>View profile ›</span>
-                  </div>
-                  <button type="button" className="mini" onClick={() => go('dm', { pid: product.id })}>Message</button>
-                  <button type="button" className="mini ghost" onClick={() => onFollow(name)}>Unfollow</button>
-                </div>
-              );
-            })}
+            ))}
           </React.Fragment>
         )}
       </div>

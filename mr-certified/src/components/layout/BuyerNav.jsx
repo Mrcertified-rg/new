@@ -10,7 +10,7 @@ const TABS = [
   { screen: 'buyerprofile', label: 'Profile', Icon: UserIcon },
 ];
 
-export default function BuyerNav({ screen, go, cartCount = 0 }) {
+export default function BuyerNav({ screen, go, goHome, cartCount = 0 }) {
   const { user } = useAuth();
   return (
     <nav className="buyer-nav" aria-label="Main navigation">
@@ -20,7 +20,7 @@ export default function BuyerNav({ screen, go, cartCount = 0 }) {
           key={target}
           className={screen === target ? 'on' : ''}
           aria-current={screen === target ? 'page' : undefined}
-          onClick={() => go(target)}
+          onClick={() => target === 'feed' && goHome ? goHome() : go(target)}
         >
           {target === 'buyerprofile' && user?.profilePicture
             ? <img className="buyer-nav-avatar" src={user.profilePicture} alt="" />
