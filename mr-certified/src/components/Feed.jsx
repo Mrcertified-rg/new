@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
-import AccountMenu from './layout/AccountMenu.jsx';
 import ThemeToggle from './ui/ThemeToggle.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
 import {
@@ -276,7 +275,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       {/* ---------- top bar: search + filters + actions ---------- */}
       <div className="mc-bar" ref={barRef}>
         <div className="mc-searchbox">
-          <SearchIcon size={18} />
+          <SearchIcon size={16} />
           <label htmlFor="product-search" className="sr-only">Search products</label>
           <input
             id="product-search"
@@ -303,14 +302,14 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           title="Filter and sort products"
           aria-expanded={panelOpen}
         >
-          <SlidersIcon size={19} />
+          <SlidersIcon size={17} />
           {activeOptions > 0 && <span className="mc-count">{activeOptions}</span>}
         </button>
 
         <Popover
           trigger={({ open, toggle }) => (
             <button type="button" className={'icon-btn' + (open ? ' on' : '')} onClick={toggle} aria-label="Notifications" aria-expanded={open}>
-              <BellIcon size={19} />
+              <BellIcon size={17} />
             </button>
           )}
         >
@@ -320,8 +319,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
             <span>Order updates and seller replies will show up here.</span>
           </div>
         </Popover>
-
-        <AccountMenu go={go} mode={mode} onSwitchMode={onSwitchMode} cartCount={cartCount} />
 
         {showSug && suggestions.length > 0 && (
           <div className="search-suggestions" role="listbox">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PRODUCTS, INIT_TX, ORDERS, money } from './data.js';
 import Feed from './components/Feed.jsx';
+import Reels from './components/Reels.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
 import SellerProfile from './components/SellerProfile.jsx';
 import Orders from './components/Orders.jsx';
@@ -24,6 +25,7 @@ import Cart from './components/cart.jsx';
 import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
 import AppBar from './components/layout/AppBar.jsx';
+import BuyerNav from './components/layout/BuyerNav.jsx';
 import RoleStatusBanner from './components/auth/RoleStatusBanner.jsx';
 import { ArrowLeftIcon } from './components/ui/Icons.jsx';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
@@ -302,6 +304,7 @@ function AppInner() {
   );
   // MC - cart actions and order tracking
   else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={setShareFor} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} />;
+  else if (screen === 'reels') body = <Reels go={go} addToCart={addToCart} />;
   else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
   else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
   else if (screen === 'product') body = <ProductDetail pid={pid} go={go} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} />;
@@ -324,6 +327,7 @@ function AppInner() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {body}
+      {mode === 'buyer' && ['feed', 'reels', 'friends', 'buyerprofile'].includes(screen) && <BuyerNav screen={screen} go={go} />}
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}
