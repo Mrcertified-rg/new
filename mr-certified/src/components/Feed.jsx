@@ -163,8 +163,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const [city, setCity] = useState('any');
   const [color, setColor] = useState('any');
   const [size, setSize] = useState('any');
-  const [pmin, setPmin] = useState('');
-  const [pmax, setPmax] = useState('');
 
   const barRef = useRef(null);
 
@@ -222,18 +220,15 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   useOutside(barRef, closeSug, showSug);
 
   const terms = useMemo(() => getSearchTerms(query), [query]);
-  const activeFilters = (city !== 'any' ? 1 : 0) + (color !== 'any' ? 1 : 0) + (size !== 'any' ? 1 : 0) + (pmin !== '' || pmax !== '' ? 1 : 0);
+  const activeFilters = (city !== 'any' ? 1 : 0) + (color !== 'any' ? 1 : 0) + (size !== 'any' ? 1 : 0);
   const activeOptions = activeFilters + (sort !== 'featured' ? 1 : 0);
 
   const list = useMemo(() => {
-    const lo = pmin === '' ? null : Number(pmin);
-    const hi = pmax === '' ? null : Number(pmax);
     const rows = PRODUCTS
       .filter(p => catFilter === 'For You' || p.cat === catFilter)
       .filter(p => city === 'any' || p.city === city)
       .filter(p => color === 'any' || (p.colors || []).includes(color))
       .filter(p => size === 'any' || (p.sizes || []).map(String).includes(size))
-      .filter(p => (lo === null || p.price >= lo) && (hi === null || p.price <= hi))
       .map((product, index) => ({ product, index, score: scoreProduct(product, terms, query) }))
       .filter(({ score }) => !terms.length || score > 0);
 
@@ -247,7 +242,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       }
     });
     return rows.map(r => r.product);
-  }, [catFilter, query, terms, sort, city, color, size, pmin, pmax]);
+  }, [catFilter, query, terms, sort, city, color, size]);
 
   const suggestions = useMemo(() => {
     const q = normalize(query);
@@ -257,10 +252,17 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       .slice(0, 5);
   }, [query]);
 
-  const resetFilters = () => { setCity('any'); setColor('any'); setSize('any'); setPmin(''); setPmax(''); };
-  const digits = v => v.replace(/[^0-9]/g, '');
+  const resetFilters = () => { setCity('any'); setColor('any'); setSize('any'); };
   const isFiltering = !!query.trim() || activeFilters > 0 || catFilter !== 'For You';
   const showSpotlight = !isFiltering;
+  const resultContext = [
+    query.trim() ? `Search: ${query.trim()}` : null,
+    catFilter !== 'For You' ? catFilter : null,
+    city !== 'any' ? city : null,
+    color !== 'any' ? color : null,
+    size !== 'any' ? `Size ${size}` : null,
+    sort !== 'featured' ? SORTS.find(option => option.id === sort)?.label : null,
+  ].filter(Boolean);
 
   return (
     <React.Fragment>
@@ -297,7 +299,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           type="button"
           className={'icon-btn mc-filterbtn' + (panelOpen || activeOptions ? ' on' : '')}
           onClick={() => { setPanelOpen(o => !o); setShowSug(false); }}
-          aria-label="Filters and sorting"
+          aria-label="Open filters and sorting"
+          title="Filter and sort products"
           aria-expanded={panelOpen}
         >
           <SlidersIcon size={19} />
@@ -357,13 +360,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <option value="any">All sizes</option>
               {ALL_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
             </FilterSelect>
-            <div className="ffield">
-              <span>Price range (KSh)</span>
-              <div className="fprice">
-                <input inputMode="numeric" placeholder="Min" aria-label="Minimum price" value={pmin} onChange={e => setPmin(digits(e.target.value))} />
-                <input inputMode="numeric" placeholder="Max" aria-label="Maximum price" value={pmax} onChange={e => setPmax(digits(e.target.value))} />
-              </div>
-            </div>
           </div>
           <button type="button" className="btn ghost fclear" onClick={resetFilters} disabled={!activeFilters}>
             <ResetIcon size={15} /> Clear filters
@@ -445,15 +441,11 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
         </section>
       )}
 
-      {/* ---------- curated categories ---------- */}
+      </div>
+      </div>
+
+      {/* Keep category shortcuts outside the scrolling product feed. */}
       <section className="market-edits" aria-label="Product categories">
-        {isFiltering && (
-          <div className="market-section-head">
-            <div className="market-section-actions">
-              <span className="market-result-count">{list.length} result{list.length === 1 ? '' : 's'}</span>
-            </div>
-          </div>
-        )}
         <div className="market-edit-list">
           {CATEGORY_TABS.map(category => (
             <button
@@ -468,12 +460,13 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           ))}
         </div>
       </section>
-      </div>
-      </div>
 
       {/* ---------- feed ---------- */}
       <div className="screen market-feed" onScroll={handleFeedScroll}>
-        {!isFiltering && <div className="market-list-heading"><span>THE GOOD STUFF</span><span>{list.length} finds, no filler</span></div>}
+        <div className="market-list-heading">
+          <span>{resultContext.length > 0 ? resultContext.join(' · ') : 'All products'}</span>
+          <span>{list.length} {list.length === 1 ? 'find' : 'finds'}</span>
+        </div>
         {list.length === 0 ? (
           <div className="empty-state">
             <SearchIcon size={28} />
