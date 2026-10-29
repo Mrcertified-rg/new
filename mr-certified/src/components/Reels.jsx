@@ -48,19 +48,29 @@ export default function Reels({ go, addToCart, liked = [], onToggleLike, onComme
             </div>
           )}
           <div className="reel-actions" aria-label={`${product.name} actions`}>
-            <button
-              type="button"
-              className={'reel-follow' + (isFollowing(product.seller) ? ' on' : '')}
-              onClick={() => onFollow?.(product.seller)}
-              aria-pressed={isFollowing(product.seller)}
-              aria-label={isFollowing(product.seller) ? `Unfollow ${product.seller}` : `Follow ${product.seller}`}
-              title={isFollowing(product.seller) ? 'Following seller' : `Follow ${product.seller}`}
-            >
-              <span className="reel-seller-avatar" style={{ background: `linear-gradient(145deg, ${product.g[0]}, ${product.g[1]})` }}>
-                {sellerInitials(product.seller)}
-              </span>
-              <span className="reel-follow-badge" aria-hidden="true">{isFollowing(product.seller) ? '✓' : '+'}</span>
-            </button>
+            <div className="reel-seller-follow">
+              <button
+                type="button"
+                className="reel-seller-profile"
+                onClick={() => go('sellerprofile', { pid: product.id })}
+                aria-label={`View ${product.seller}'s profile`}
+                title={`View ${product.seller}'s profile`}
+              >
+                <span className="reel-seller-avatar" style={{ background: `linear-gradient(145deg, ${product.g[0]}, ${product.g[1]})` }}>
+                  {sellerInitials(product.seller)}
+                </span>
+              </button>
+              <button
+                type="button"
+                className={'reel-follow-badge' + (isFollowing(product.seller) ? ' on' : '')}
+                onClick={() => onFollow?.(product.seller)}
+                aria-pressed={isFollowing(product.seller)}
+                aria-label={isFollowing(product.seller) ? `Unfollow ${product.seller}` : `Follow ${product.seller}`}
+                title={isFollowing(product.seller) ? 'Following seller' : `Follow ${product.seller}`}
+              >
+                {isFollowing(product.seller) ? '✓' : '+'}
+              </button>
+            </div>
             <button
               type="button"
               className={'reel-action reel-like' + (isLiked(product.id) ? ' on' : '')}
