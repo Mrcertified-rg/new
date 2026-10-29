@@ -276,7 +276,7 @@ function AppInner() {
   const closeModal = () => setModal(null);
 
   /* --------------------------------- render --------------------------------- */
-  const bar = <AppBar go={go} onBack={goBack} mode={mode} cartCount={cartCount} onSwitchMode={switchMode} />;
+  const bar = <AppBar go={go} onBack={goBack} mode={mode} screen={screen} cartCount={cartCount} onSwitchMode={switchMode} />;
   const bannerRole = mode === 'seller' || mode === 'marketer' ? mode : null;
   /** Inner screens get the slim top bar (replaces the old bottom tab bar). */
   const withBar = (el) => (
@@ -316,7 +316,7 @@ function AppInner() {
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
   else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
-  else if (screen === 'buyerprofile') body = withBar(<BuyerProfile setMode={switchMode} go={go} following={following} onFollow={toggleFollow} />);
+  else if (screen === 'buyerprofile') body = withBar(<BuyerProfile go={go} openChat={openChat} />);
   else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} />);
   else if (screen === 'records') body = withBar(<Records transactions={transactions} addTx={addTx} />);
@@ -327,7 +327,7 @@ function AppInner() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {body}
-      {mode === 'buyer' && ['feed', 'reels', 'friends', 'buyerprofile'].includes(screen) && <BuyerNav screen={screen} go={go} />}
+      {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile'].includes(screen) && <BuyerNav screen={screen} go={go} cartCount={cartCount} />}
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}

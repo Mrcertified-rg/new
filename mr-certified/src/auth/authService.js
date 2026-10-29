@@ -16,7 +16,7 @@
  * ---------------------------------------------------------------------------
  */
 import { DEMO_MODE, SESSION_DAYS, MAX_FAILED_ATTEMPTS, LOCKOUT_SECONDS, ROLE_LABEL } from './config.js';
-import { parseIdentifier, normalizeEmail, normalizePhone, validateDeliveryStep } from './validators.js';
+import { parseIdentifier, normalizeEmail, normalizePhone, passwordProblem, validateDeliveryStep } from './validators.js';
 
 const KEYS = {
   users: 'mrc.demo.users',
@@ -97,8 +97,11 @@ const toPublicUser = (u) => ({
   id: u.id,
   firstName: u.firstName,
   lastName: u.lastName,
+  username: u.username || (u.firstName + (u.lastName ? '.' + u.lastName : '')).toLowerCase().replace(/[^a-z0-9.]/g, ''),
   email: u.email,
   phone: u.phone,
+  profilePicture: u.profilePicture || '',
+  theme: u.theme || 'dark',
   address: { ...u.address },
   roles: Object.fromEntries(
     Object.entries(u.roles).map(([role, r]) => [role, { status: r.status, credentialMode: r.credential?.mode || 'same' }]),
@@ -159,8 +162,11 @@ export async function registerUser(form) {
     id: 'u_' + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join(''),
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
+    username: (form.firstName + '.' + form.lastName).trim().toLowerCase().replace(/[^a-z0-9.]/g, ''),
     email,
     phone,
+    profilePicture: '',
+    theme: 'dark',
     password: await hashPassword(form.password),
     address: {
       county: form.address.county,
@@ -205,22 +211,61 @@ export async function signInUser(identifierRaw, password) {
   return toPublicUser(user);
 }
 
-export async function updateBuyerAddress(userId, address) {
-  const errors = validateDeliveryStep(address);
-  if (Object.keys(errors).length) throw authError('invalid-address', Object.values(errors)[0]);
-
+export async function updateBuyerProfile(userId, profile) {
   const users = loadUsers();
   const user = users.find((item) => item.id === userId);
   if (!user) throw authError('no-user', 'Please sign in again.');
 
-  user.address = {
-    county: address.county,
-    town: address.town.trim(),
-    area: address.area.trim(),
-    landmark: address.landmark.trim(),
-    altPhone: address.altPhone.trim() ? normalizePhone(address.altPhone) : '',
-    notes: address.notes.trim(),
-  };
+  const firstName = String(profile.firstName || '').trim();
+  const lastName = String(profile.lastName || '').trim();
+  const username = String(profile.username || '').trim().toLowerCase();
+  const email = normalizeEmail(profile.email);
+  const phone = normalizePhone(profile.phone);
+
+  if (firstName.length < 2 || lastName.length < 2) throw authError('invalid-profile', 'Enter your first and last name.');
+  if (!/^[a-z0-9._]{3,24}$/.test(username)) throw authError('invalid-username', 'Username must be 3–24 characters using letters, numbers, dots or underscores.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw authError('invalid-email', 'Enter a valid email address.');
+  if (!phone) throw authError('invalid-phone', 'Enter a valid Kenyan phone number.');
+
+  const conflict = users.find((item) => {
+    if (item.id === userId) return false;
+    const existingUsername = item.username || (item.firstName + (item.lastName ? '.' + item.lastName : '')).toLowerCase().replace(/[^a-z0-9.]/g, '');
+    return item.email === email || item.phone === phone || existingUsername.toLowerCase() === username;
+  });
+  if (conflict) throw authError('exists', 'That email, phone number or username is already in use.');
+
+  if (profile.newPassword) {
+    if (!profile.currentPassword || !(await passwordMatches(profile.currentPassword, user.password))) {
+      throw authError('invalid-password', 'Enter your current password to change it.');
+    }
+    const problem = passwordProblem(profile.newPassword);
+    if (problem) throw authError('invalid-password', problem);
+    user.password = await hashPassword(profile.newPassword);
+  }
+
+  user.firstName = firstName;
+  user.lastName = lastName;
+  user.username = username;
+  user.email = email;
+  user.phone = phone;
+  user.profilePicture = profile.profilePicture || '';
+  user.theme = profile.theme === 'light' ? 'light' : 'dark';
+
+  if (profile.address && Object.values(profile.address).some((value) => String(value || '').trim())) {
+    const errors = validateDeliveryStep(profile.address);
+    if (Object.keys(errors).length) throw authError('invalid-address', Object.values(errors)[0]);
+    user.address = {
+      county: profile.address.county,
+      town: profile.address.town.trim(),
+      area: profile.address.area.trim(),
+      landmark: profile.address.landmark.trim(),
+      altPhone: profile.address.altPhone.trim() ? normalizePhone(profile.address.altPhone) : '',
+      notes: profile.address.notes.trim(),
+    };
+  } else if (profile.address) {
+    user.address = { county: '', town: '', area: '', landmark: '', altPhone: '', notes: '' };
+  }
+
   saveUsers(users);
   return toPublicUser(user);
 }
@@ -299,8 +344,14 @@ export function saveBusinessProfile(userId, profile) {
 }
 
 /* ---------------------- people directory (friends) ---------------------- */
-// MC - expose only public name fields to friend search and chats
-const toPerson = (user) => ({ id: user.id, firstName: user.firstName, lastName: user.lastName });
+// Friend lists expose only display identity fields, never contact or address details.
+const toPerson = (user) => ({
+  id: user.id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  username: user.username || '',
+  profilePicture: user.profilePicture || '',
+});
 
 export function getPerson(id) {
   const user = findUserById(id);

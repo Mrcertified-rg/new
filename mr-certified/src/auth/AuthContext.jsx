@@ -15,8 +15,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   restoreSession, registerUser, signInUser, signOutUser,
-  verifyRolePassword, applyForRole, setRoleStatusDemo, updateBuyerAddress,
+  verifyRolePassword, applyForRole, setRoleStatusDemo, updateBuyerProfile,
 } from './authService.js';
+import { applyThemePreference, getThemePreference } from '../themePreference.js';
 import { ROLE_IDLE_MINUTES } from './config.js';
 import AuthSheet from '../components/auth/AuthSheet.jsx';
 import RoleAccessSheet from '../components/auth/RoleAccessSheet.jsx';
@@ -80,10 +81,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const saveBuyerAddress = async (address) => {
-    if (!user) throw new Error('Please sign in again to update your delivery details.');
-    setUser(await updateBuyerAddress(user.id, address));
+  const saveBuyerProfile = async (profile) => {
+    if (!user) throw new Error('Please sign in again to update your profile.');
+    setUser(await updateBuyerProfile(user.id, profile));
   };
+
+  useEffect(() => {
+    applyThemePreference(user?.theme || getThemePreference());
+  }, [user?.id, user?.theme]);
 
   /* ------------------- seller / marketer unlocking ------------------- */
   /** Opens the "log in to Seller mode" popup (or the "apply" popup if they never applied). */
@@ -132,7 +137,7 @@ export function AuthProvider({ children }) {
   }, [elevatedRole]);
 
   const value = {
-    user, elevatedRole, saveBuyerAddress,
+    user, elevatedRole, saveBuyerProfile,
     sheet, promptAuth, closeAuth, setSheetView, requireAuth, signUp, signIn, signOut,
     roleSheet, openRoleAccess, closeRoleAccess, unlockRole, applyRole, lockRole, simulateApproval,
   };

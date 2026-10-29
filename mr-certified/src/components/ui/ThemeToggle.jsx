@@ -1,23 +1,14 @@
 import React, { useState, useCallback } from 'react';
+import { applyThemePreference, getThemePreference } from '../../themePreference.js';
 
 /* Light / dark theme. The choice is saved on this device and applied before the first render (no flash). */
-const KEY = 'merqo-theme';
-
-function readTheme() {
-  try { return localStorage.getItem(KEY) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; }
-}
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  document.documentElement.style.colorScheme = t;
-}
-applyTheme(readTheme());
+applyThemePreference(getThemePreference());
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState(readTheme);
+  const [theme, setTheme] = useState(getThemePreference);
   const toggle = useCallback(() => {
     const next = theme === 'light' ? 'dark' : 'light';
-    applyTheme(next);
-    try { localStorage.setItem(KEY, next); } catch (e) { /* storage blocked: theme still applies for this visit */ }
+    applyThemePreference(next);
     setTheme(next);
   }, [theme]);
 

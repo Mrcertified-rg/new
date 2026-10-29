@@ -6,11 +6,8 @@
 
 export const MENU_BY_MODE = {
   buyer: [
-    { label: 'Marketplace', screen: 'feed', icon: 'home' },
     { label: 'My profile', screen: 'buyerprofile', icon: 'user' },
     { label: 'My orders', screen: 'orders', icon: 'orders' },
-    { label: 'Friends & chats', screen: 'friends', icon: 'inbox', badge: 'social' },
-    { label: 'Cart', screen: 'cart', icon: 'cart', badge: 'cart' },
   ],
   seller: [
     { label: 'Dashboard', screen: 'dash', icon: 'grid' },

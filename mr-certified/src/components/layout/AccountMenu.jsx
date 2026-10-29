@@ -53,8 +53,10 @@ export default function AccountMenu({ go, mode = 'buyer', onSwitchMode, cartCoun
   return (
     <Popover
       trigger={({ open, toggle }) => (
-        <button type="button" className={'icon-btn avatar-btn' + (open ? ' on' : '')} onClick={toggle} aria-label="Account menu" aria-expanded={open}>
-          {user ? <span className="avatar-initials">{initials}</span> : <UserIcon size={19} />}
+        <button type="button" className={'icon-btn avatar-btn' + (open ? ' on' : '') + (user?.profilePicture ? ' has-photo' : '')} onClick={toggle} aria-label="Account menu" aria-expanded={open}>
+          {user?.profilePicture
+            ? <img className="account-profile-picture" src={user.profilePicture} alt="" />
+            : user ? <span className="avatar-initials">{initials}</span> : <UserIcon size={19} />}
         </button>
       )}
     >
@@ -79,7 +81,9 @@ export default function AccountMenu({ go, mode = 'buyer', onSwitchMode, cartCoun
             /* ---------- signed in ---------- */
             <React.Fragment>
               <div className="menu-head">
-                <span className="menu-avatar">{initials}</span>
+                <span className={'menu-avatar' + (user.profilePicture ? ' has-photo' : '')}>
+                  {user.profilePicture ? <img src={user.profilePicture} alt="" /> : initials}
+                </span>
                 <div>
                   <b>{user.firstName} {user.lastName}</b>
                   <span>{ROLE_LABEL[mode]} mode{mode !== 'buyer' && roleStatus && roleStatus !== 'approved' ? ' · ' + STATUS_LABEL[roleStatus] : ''}</span>
