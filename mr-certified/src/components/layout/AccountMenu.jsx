@@ -3,7 +3,7 @@
  * The person icon dropdown used on every screen (feed + AppBar).
  *   - Visitors: "Sign in" / "Create account".
  *   - Signed in: pages for the ACTIVE mode, a "Switch mode" list, Sign out.
- * Switching to Seller/Marketer is handled by App (it asks for the role login).
+ * Switching to Seller is handled by App (it asks for the role login).
  */
 import React, { useEffect, useState } from 'react';
 import Popover from '../ui/Popover.jsx';
@@ -74,7 +74,7 @@ export default function AccountMenu({ go, mode = 'buyer', onSwitchMode, cartCoun
                 <LockIcon size={17} /><span>Sign in</span>
               </button>
               <button type="button" className="menu-item" onClick={() => { close(); promptAuth('', null, 'signup'); }}>
-                <UserIcon size={17} /><span>Create account<small className="mi-sub">Buyer, seller or marketer</small></span>
+                <UserIcon size={17} /><span>Create account<small className="mi-sub">Buyer or seller</small></span>
               </button>
             </React.Fragment>
           ) : (

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 
-export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,mode,promotedTag,onPromote,addToCart,liked,onToggleLike}){
+export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,addToCart,liked,onToggleLike}){
  const p=PRODUCTS.find(x=>x.id===pid);
  if (!p) return null;
  const sel=sizeSel||p.sizes[0];
- const tagged=promotedTag&&promotedTag.productId===pid;
  return (
   <div className="screen">
    <div className="pd-media" style={{background:`linear-gradient(160deg,${p.g[0]},${p.g[1]})`}} />
@@ -14,7 +13,6 @@ export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,mode,pro
      <div style={{fontWeight:600}}>{p.seller} <span className="badge">✓</span></div>
      <span className="pill">View profile ›</span>
     </div>
-    {tagged && <div className="tag-marketer">🔗 Marketed by @{promotedTag.marketerName}</div>}
     <h2 style={{marginTop:10}}>{p.name}</h2>
     <div className="price" style={{fontSize:19,margin:'4px 0 8px'}}>{money(p.price)}</div>
     <p style={{color:'var(--sub)',fontSize:13.5,lineHeight:1.5}}>{p.desc}</p>
@@ -37,19 +35,13 @@ export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,mode,pro
      ))}
     </div>
    </div>
-   {mode==='marketer' ? (
-    <div className="buybar">
-     <button className="btn green" style={{flex:1}} onClick={()=>onPromote(p.id)}>🔗 Promote this product</button>
-    </div>
-   ) : (
-    <div className="buybar">
-     <button type="button" className={'market-like' + (liked ? ' on' : '')} style={{flex:1}} onClick={onToggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike product' : 'Like product'} title={liked ? 'Unlike' : 'Like'}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
-      <span>{liked ? 'Liked' : 'Like'}</span>
-     </button>
-     <button className="btn green" style={{flex:2}} onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart — {money(p.price)}</button>
-    </div>
-   )}
+   <div className="buybar">
+    <button type="button" className={'market-like' + (liked ? ' on' : '')} style={{flex:1}} onClick={onToggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike product' : 'Like product'} title={liked ? 'Unlike' : 'Like'}>
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+     <span>{liked ? 'Liked' : 'Like'}</span>
+    </button>
+    <button className="btn green" style={{flex:2}} onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart — {money(p.price)}</button>
+   </div>
   </div>
  );
 }

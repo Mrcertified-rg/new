@@ -28,16 +28,22 @@ export default function AuthSheet() {
       <div className="modal auth-sheet" role="dialog" aria-modal="true" aria-label={signup ? 'Create account' : 'Sign in'}>
         <div className="auth-head">
           <div>
-            <h2>{signup ? 'Create your account' : 'Welcome back'}</h2>
+            <h2>{signup ? sheet.roleIntent === 'seller' ? 'Create your seller account' : 'Create your account' : 'Welcome back'}</h2>
             <p>
-              {sheet.reason
+              {sheet.notice
+                ? sheet.notice
+                : sheet.reason
                 ? `To ${sheet.reason}, you need an account.`
-                : signup ? 'Takes about a minute. You can keep browsing without one.' : 'Sign in to continue.'}
+                : signup
+                  ? sheet.roleIntent === 'seller'
+                    ? 'Set up your shared login and seller workspace directly.'
+                    : 'Takes about a minute. You can keep browsing without one.'
+                  : 'Sign in to continue.'}
             </p>
           </div>
           <button type="button" className="icon-btn" onClick={closeAuth} aria-label="Close"><CloseIcon size={18} /></button>
         </div>
-        {signup ? <SignUpForm /> : <SignInForm />}
+        {signup ? <SignUpForm roleIntent={sheet.roleIntent} /> : <SignInForm initialIdentifier={sheet.initialIdentifier} />}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 /**
  * components/auth/RoleCredentialChoice.jsx
- * "Same password" vs "Different password" picker for Seller / Marketer mode.
+ * "Same password" vs "Different password" picker for Seller mode.
  * Used by the sign-up wizard and by the "apply for a role" popup.
  */
 import React from 'react';

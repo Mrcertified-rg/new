@@ -1,6 +1,6 @@
 # MERQO Stores
 
-Social-commerce prototype: TikTok-style buyer feed, certified sellers, marketers, business records, Certified AI (mock).
+Social-commerce prototype: TikTok-style buyer feed, certified sellers, business records, Certified AI (mock).
 
 ## Run
     npm install

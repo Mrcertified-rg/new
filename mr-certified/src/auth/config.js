@@ -10,14 +10,14 @@ export const DEMO_MODE = true;
 /** Buyers stay signed in this long (days) after signing in / registering. */
 export const SESSION_DAYS = 30;
 
-/** Seller / Marketer mode locks itself after this many idle minutes. */
+/** Seller mode locks itself after this many idle minutes. */
 export const ROLE_IDLE_MINUTES = 15;
 
 /** Brute-force protection: lock a login after N wrong passwords for N seconds. */
 export const MAX_FAILED_ATTEMPTS = 5;
 export const LOCKOUT_SECONDS = 60;
 
-export const ROLE_LABEL = { buyer: 'Buyer', seller: 'Seller', marketer: 'Marketer' };
+export const ROLE_LABEL = { buyer: 'Buyer', seller: 'Seller' };
 
 /** Role application states (same wording as the product spec). */
 export const STATUS_LABEL = {

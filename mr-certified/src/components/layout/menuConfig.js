@@ -20,15 +20,10 @@ export const MENU_BY_MODE = {
     { label: 'Certified AI', screen: 'ai', icon: 'ai' },
     { label: 'Settings', screen: 'sellerprofilepage', icon: 'settings' },
   ],
-  marketer: [
-    { label: 'Promote products', screen: 'mfeed', icon: 'megaphone' },
-    { label: 'My promotions', screen: 'mypromos', icon: 'records' },
-  ],
 };
 
 /** The "Switch mode" list at the bottom of the menu. */
 export const MODE_OPTIONS = [
   { id: 'buyer', label: 'Buyer', icon: 'bag' },
   { id: 'seller', label: 'Seller', icon: 'store' },
-  { id: 'marketer', label: 'Marketer', icon: 'megaphone' },
 ];

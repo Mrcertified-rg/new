@@ -8,6 +8,29 @@ import { KENYA_COUNTIES, KENYA_SUB_COUNTIES } from './config.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const NAME_RE = /^[\p{L}][\p{L}\s'.-]{1,39}$/u;
+const MAX_SELLER_DOCUMENT_SIZE = 10 * 1024 * 1024;
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|heic|heif)$/i;
+
+function documentError(file, kind) {
+  if (!file) return 'This document is required.';
+  if (!file.size) return 'This file is empty.';
+  if (file.size > MAX_SELLER_DOCUMENT_SIZE) return 'Choose a file that is 10 MB or smaller.';
+
+  const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+  const validType = kind === 'image'
+    ? imageTypes.includes(String(file.type).toLowerCase()) || IMAGE_EXTENSIONS.test(file.name)
+    : file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (!validType) return kind === 'image' ? 'Choose a JPG, PNG, WebP or HEIC photo.' : 'Choose a PDF certificate.';
+  return '';
+}
+
+export function validateSellerDocuments(documents = {}) {
+  return {
+    idFront: documentError(documents.idFront, 'image'),
+    idBack: documentError(documents.idBack, 'image'),
+    kraCertificate: documentError(documents.kraCertificate, 'pdf'),
+  };
+}
 
 export const normalizeEmail = (e) => String(e || '').trim().toLowerCase();
 
@@ -71,10 +94,13 @@ export function validateRoleChoices(choices) {
     }
     const b = c.biz || {};
     const biz = {};
-    if (String(b.name || '').trim().length < 2) biz.name = role === 'marketer' ? 'Enter your marketer name.' : 'Enter your business name.';
+    if (String(b.name || '').trim().length < 2) biz.name = 'Enter your business name.';
     if (String(b.id || '').trim().length < 5) biz.id = 'Enter your National ID number.';
     if (String(b.kra || '').trim().length < 8) biz.kra = 'Enter your KRA PIN, e.g. A012345678B.';
     if (!normalizePhone(b.phone)) biz.phone = 'Use a Kenyan number, e.g. 0712 345 678.';
+    Object.entries(validateSellerDocuments(b)).forEach(([field, error]) => {
+      if (error) biz[field] = error;
+    });
     if (Object.keys(biz).length) e[role + 'Biz'] = biz;
   });
   return e;

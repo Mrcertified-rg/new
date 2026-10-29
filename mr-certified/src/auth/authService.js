@@ -12,7 +12,7 @@
  *
  * What this file does implement for real:
  *   - password hashing (PBKDF2-SHA256 + random salt via Web Crypto)
- *   - 30-day buyer session, wrong-password lockout, role statuses
+ *   - 30-day shared account session, wrong-password lockout, role statuses
  * ---------------------------------------------------------------------------
  */
 import { DEMO_MODE, SESSION_DAYS, MAX_FAILED_ATTEMPTS, LOCKOUT_SECONDS, ROLE_LABEL } from './config.js';
@@ -104,7 +104,9 @@ const toPublicUser = (u) => ({
   theme: u.theme || 'dark',
   address: { ...u.address },
   roles: Object.fromEntries(
-    Object.entries(u.roles).map(([role, r]) => [role, { status: r.status, credentialMode: r.credential?.mode || 'same' }]),
+    Object.entries(u.roles)
+      .filter(([role]) => role === 'buyer' || role === 'seller')
+      .map(([role, r]) => [role, { status: r.status, credentialMode: r.credential?.mode || 'same' }]),
   ),
 });
 
@@ -116,14 +118,14 @@ function startSession(userId) {
   write(KEYS.session, { userId, expiresAt: Date.now() + SESSION_DAYS * 86400000 });
 }
 
-/** Builds the stored credential for a seller/marketer role. */
+/** Builds the stored credential for a seller role. */
 async function buildRoleCredential(choice) {
   if (choice.mode === 'separate') return { mode: 'separate', ...(await hashPassword(choice.password)) };
   return { mode: 'same' };
 }
 
 /* ------------------------------ sessions ------------------------------ */
-/** Called on app start: returns the signed-in buyer, or null. */
+/** Called on app start: returns the signed-in account, or null. */
 export function restoreSession() {
   const session = read(KEYS.session, null);
   if (!session) return null;
@@ -141,8 +143,8 @@ export async function signOutUser() {
 
 /* ------------------------- register / sign in ------------------------- */
 /**
- * Creates the account. Everyone is a Buyer (approved). Seller / Marketer are
- * only recorded as PENDING applications - they never start approved.
+ * Creates a shared login. Buyer access is available by default; Seller
+ * workspaces are recorded as PENDING applications, never approved.
  */
 export async function registerUser(form) {
   const email = normalizeEmail(form.email);
@@ -153,10 +155,8 @@ export async function registerUser(form) {
   }
 
   const roles = { buyer: { status: 'approved' } };
-  for (const role of ['seller', 'marketer']) {
-    const choice = form.roleChoices?.[role];
-    if (choice?.on) roles[role] = { status: 'pending', credential: await buildRoleCredential(choice) };
-  }
+  const sellerChoice = form.roleChoices?.seller;
+  if (sellerChoice?.on) roles.seller = { status: 'pending', credential: await buildRoleCredential(sellerChoice) };
 
   const user = {
     id: 'u_' + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join(''),
@@ -180,16 +180,14 @@ export async function registerUser(form) {
     createdAt: new Date().toISOString(),
   };
   saveUsers([...users, user]);
-  // Seller / Marketer details typed during sign-up are saved per role, so those modes open straight away.
-  for (const role of ['seller', 'marketer']) {
-    const b = form.roleChoices?.[role]?.biz;
-    if (form.roleChoices?.[role]?.on && b) {
-      saveBusinessProfile(user.id, {
-        role, name: b.name.trim(), id: b.id.trim(), kra: b.kra.trim().toUpperCase(), phone: normalizePhone(b.phone),
-      });
-    }
+  // Seller details typed during sign-up are saved so that workspace opens straight away.
+  if (sellerChoice?.on && sellerChoice.biz) {
+    const b = sellerChoice.biz;
+    saveBusinessProfile(user.id, {
+      role: 'seller', name: b.name.trim(), id: b.id.trim(), kra: b.kra.trim().toUpperCase(), phone: normalizePhone(b.phone),
+    });
   }
-  startSession(user.id);
+  if (sellerChoice?.on) startSession(user.id);
   return toPublicUser(user);
 }
 
@@ -270,13 +268,14 @@ export async function updateBuyerProfile(userId, profile) {
   return toPublicUser(user);
 }
 
-/* ---------------------- seller / marketer access ---------------------- */
+/* ---------------------- seller access ---------------------- */
 /**
- * "Log in again" check used every time someone switches into Seller or
- * Marketer mode. Uses the role's own password if they chose a separate one,
+ * "Log in again" check used every time someone switches into Seller mode.
+ * Uses the role's own password if they chose a separate one,
  * otherwise the account password.
  */
 export async function verifyRolePassword(userId, role, password) {
+  assertSellerRole(role);
   const user = findUserById(userId);
   const entry = user?.roles?.[role];
   if (!entry) throw authError('no-role', `You have not applied for ${ROLE_LABEL[role]} access yet.`);
@@ -296,10 +295,11 @@ export async function verifyRolePassword(userId, role, password) {
 }
 
 /**
- * Existing buyer asks for Seller/Marketer access. Always starts as PENDING and
+ * Existing buyer asks for Seller access. Always starts as PENDING and
  * requires the account password (so a borrowed phone cannot add roles).
  */
 export async function applyForRole(userId, role, choice, accountPassword) {
+  assertSellerRole(role);
   const users = loadUsers();
   const user = users.find((u) => u.id === userId);
   if (!user) throw authError('no-user', 'Please sign in again.');
@@ -321,6 +321,7 @@ export async function applyForRole(userId, role, choice, accountPassword) {
 /** DEMO ONLY: pretend an admin approved the application. Disabled when DEMO_MODE is false. */
 export async function setRoleStatusDemo(userId, role, status) {
   if (!DEMO_MODE) throw authError('forbidden', 'Only an administrator can change a role status.');
+  assertSellerRole(role);
   const users = loadUsers();
   const user = users.find((u) => u.id === userId);
   if (!user?.roles?.[role]) throw authError('no-role', 'No such role application.');
@@ -329,15 +330,21 @@ export async function setRoleStatusDemo(userId, role, status) {
   return toPublicUser(user);
 }
 
-/* --------------------- seller / marketer business info --------------------- */
+/* ------------------------- seller business info ------------------------- */
 /** Keeps the details typed in the existing "create seller account" screen. */
-/** Each role (seller / marketer) keeps its own details. Older saves held one profile ({ role, ... }). */
+/** Older saves held one profile ({ role, ... }). */
+function assertSellerRole(role) {
+  if (role !== 'seller') throw authError('invalid-role', 'Only seller workspaces are supported.');
+}
+
 const profilesByRole = (entry) => (!entry ? {} : entry.role ? { [entry.role]: entry } : entry);
 export const getBusinessProfile = (userId, role) => {
+  assertSellerRole(role);
   const byRole = profilesByRole(read(KEYS.business, {})[userId]);
   return byRole[role] || null;
 };
 export function saveBusinessProfile(userId, profile) {
+  assertSellerRole(profile.role);
   const all = read(KEYS.business, {});
   all[userId] = { ...profilesByRole(all[userId]), [profile.role]: profile };
   write(KEYS.business, all);

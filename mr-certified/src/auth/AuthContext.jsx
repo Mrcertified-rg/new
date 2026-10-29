@@ -3,13 +3,13 @@
  * ---------------------------------------------------------------------------
  * The single place the rest of the app talks to for "who is signed in?".
  *
- *   user          the signed-in account (null = visitor browsing as a guest)
- *   elevatedRole  'seller' | 'marketer' | null - which privileged mode is
+ *   user          the shared signed-in identity (null = visitor browsing as a guest)
+ *   elevatedRole  'seller' | null - which privileged mode is
  *                 currently UNLOCKED. Kept in memory only, so a page refresh,
  *                 switching modes, or 15 idle minutes locks it again.
  *
- * Buyers: signed in once, remembered for 30 days (see authService).
- * Seller / Marketer: must log in again every time they enter that mode.
+ * Shared account: signed in once, remembered for 30 days (see authService).
+ * Seller: must log in again every time they enter that mode.
  * ---------------------------------------------------------------------------
  */
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -31,31 +31,42 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  // Restore the remembered buyer session synchronously so there is no login flash.
+  // Restore the remembered account synchronously so there is no login flash.
   const [user, setUser] = useState(() => restoreSession());
   const [elevatedRole, setElevatedRole] = useState(null);
 
   // Sign-in / sign-up popup
-  const [sheet, setSheet] = useState({ open: false, view: 'signin', reason: '' });
+  const [sheet, setSheet] = useState({ open: false, view: 'signin', reason: '', initialIdentifier: '', notice: '' });
   const afterAuthRef = useRef(null); // action to run once the visitor is signed in
 
-  // Seller/Marketer password popup
+  // Seller password popup
   const [roleSheet, setRoleSheet] = useState({ open: false, role: null, mode: 'login' });
   const afterRoleRef = useRef(null);
 
   /* ----------------------- visitors -> account ----------------------- */
   /** Opens the sign-in (or sign-up) popup. `afterAuth` runs once they succeed. */
-  const promptAuth = useCallback((reason = '', afterAuth = null, view = 'signin') => {
+  const promptAuth = useCallback((reason = '', afterAuth = null, view = 'signin', roleIntent = null) => {
     afterAuthRef.current = afterAuth;
-    setSheet({ open: true, view, reason });
+    setSheet({ open: true, view, reason, roleIntent, initialIdentifier: '', notice: '' });
   }, []);
 
   const closeAuth = useCallback(() => {
     afterAuthRef.current = null;
-    setSheet((s) => ({ ...s, open: false }));
+    setSheet((s) => ({ ...s, open: false, initialIdentifier: '', notice: '' }));
   }, []);
 
-  const setSheetView = useCallback((view) => setSheet((s) => ({ ...s, view })), []);
+  const setSheetView = useCallback((view) => {
+    if (view === 'signin' && sheet.roleIntent) {
+      afterAuthRef.current = null;
+      setSheet((s) => ({ ...s, view, roleIntent: null }));
+      return;
+    }
+    setSheet((s) => ({
+      ...s,
+      view,
+      ...(view === 'signup' ? { initialIdentifier: '', notice: '' } : {}),
+    }));
+  }, [sheet.roleIntent]);
 
   /** Guard for account-only actions: runs `action` now if signed in, else asks to sign in first. */
   const requireAuth = useCallback((reason, action) => {
@@ -64,15 +75,31 @@ export function AuthProvider({ children }) {
     return false;
   }, [user, promptAuth]);
 
-  const finishAuth = (nextUser) => {
+  const finishAuth = (nextUser, roleIntent = null) => {
     setUser(nextUser);
-    setSheet((s) => ({ ...s, open: false }));
+    if (roleIntent) setElevatedRole(roleIntent);
+    setSheet((s) => ({ ...s, open: false, initialIdentifier: '', notice: '' }));
     const pending = afterAuthRef.current;
     afterAuthRef.current = null;
     if (pending) setTimeout(pending, 0); // resume what they were trying to do
   };
 
-  const signUp = async (form) => finishAuth(await registerUser(form));
+  const signUp = async (form) => {
+    const nextUser = await registerUser(form);
+    if (!form.roleChoices?.seller?.on) {
+      setSheet((s) => ({
+        ...s,
+        open: true,
+        view: 'signin',
+        roleIntent: null,
+        initialIdentifier: form.email || form.phone,
+        notice: 'Your account is ready. Sign in using the email or phone you registered with.',
+      }));
+      return;
+    }
+    if (form.accountIntent === 'seller') afterAuthRef.current = null;
+    finishAuth(nextUser);
+  };
   const signIn = async (identifier, password) => finishAuth(await signInUser(identifier, password));
 
   const signOut = async () => {
@@ -90,7 +117,7 @@ export function AuthProvider({ children }) {
     applyThemePreference(user?.theme || getThemePreference());
   }, [user?.id, user?.theme]);
 
-  /* ------------------- seller / marketer unlocking ------------------- */
+  /* ----------------------- seller unlocking ----------------------- */
   /** Opens the "log in to Seller mode" popup (or the "apply" popup if they never applied). */
   const openRoleAccess = useCallback((role, onDone) => {
     afterRoleRef.current = onDone || null;

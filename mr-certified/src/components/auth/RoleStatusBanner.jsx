@@ -1,6 +1,6 @@
 /**
  * components/auth/RoleStatusBanner.jsx
- * Shown at the top of Seller / Marketer screens until the role is APPROVED,
+ * Shown at the top of Seller screens until the role is APPROVED,
  * so an unverified seller is never presented as verified.
  */
 import React from 'react';
@@ -11,7 +11,7 @@ export default function RoleStatusBanner({ role, status, onSimulate }) {
   if (!role || !status || status === 'approved') return null;
   const label = ROLE_LABEL[role];
   const copy = {
-    pending: `Publishing, promotions and payouts stay locked until an administrator approves your ${label.toLowerCase()} account.`,
+    pending: `Publishing and payouts stay locked until an administrator approves your ${label.toLowerCase()} account.`,
     rejected: 'Your application was rejected. Contact support to appeal.',
     suspended: 'Your access is suspended. Contact support.',
   }[status];

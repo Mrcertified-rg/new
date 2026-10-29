@@ -1,7 +1,6 @@
 /**
  * components/auth/RoleAccessSheet.jsx
- * The "log in again" popup shown every time someone switches into Seller or
- * Marketer mode.
+ * The "log in again" popup shown every time someone switches into Seller mode.
  *   mode "login": they already hold the role -> enter its password.
  *   mode "apply": they never applied -> choose a login, confirm account
  *                 password, and the application is saved as PENDING.
@@ -13,7 +12,7 @@ import { ROLE_LABEL, STATUS_LABEL } from '../../auth/config.js';
 import { passwordProblem } from '../../auth/validators.js';
 import { PasswordField, FormError } from './FormFields.jsx';
 import RoleCredentialChoice from './RoleCredentialChoice.jsx';
-import { CloseIcon, LockIcon, StoreIcon, MegaphoneIcon } from '../ui/Icons.jsx';
+import { CloseIcon, LockIcon, StoreIcon } from '../ui/Icons.jsx';
 
 export default function RoleAccessSheet() {
   const { user, roleSheet, closeRoleAccess, unlockRole, applyRole } = useAuth();
@@ -42,7 +41,7 @@ export default function RoleAccessSheet() {
 
   const { role, mode } = roleSheet;
   const label = ROLE_LABEL[role];
-  const Icon = role === 'seller' ? StoreIcon : MegaphoneIcon;
+  const Icon = StoreIcon;
   const status = user.roles[role]?.status;
   const separate = user.roles[role]?.credentialMode === 'separate';
 

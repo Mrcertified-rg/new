@@ -1,10 +1,7 @@
 /**
  * components/auth/SignUpForm.jsx
- * Three short steps so nobody faces one giant form:
- *   1. About you   (name, phone, email, password)
- *   2. Delivery    (county, town, area, landmark ...)
- *   3. Your role   (buyer / seller / marketer)
- * Creating the account signs the buyer in right away and keeps them signed in.
+ * Shared-account signup with optional delivery details and role workspace setup.
+ * Seller-intent signup skips delivery details and opens directly on seller setup.
  */
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -14,20 +11,20 @@ import { Field, PasswordField, FormError } from './FormFields.jsx';
 import RolePicker from './RolePicker.jsx';
 import { ArrowLeftIcon } from '../ui/Icons.jsx';
 
-const STEP_TITLES = ['Buyer basics', 'Delivery details (optional)', 'Your MERQO roles'];
+const STEP_TITLES = ['Your details', 'Delivery details (optional)', 'Your MERQO roles'];
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', phone: '', email: '', password: '',
   county: '', town: '', area: '', landmark: '', altPhone: '', notes: '',
 };
 const EMPTY_BIZ = { name: '', id: '', kra: '', phone: '' };
-const EMPTY_CHOICE = { on: false, mode: 'same', password: '', biz: EMPTY_BIZ };
+const EMPTY_CHOICE = (on = false) => ({ on, mode: 'same', password: '', biz: { ...EMPTY_BIZ } });
 
-export default function SignUpForm() {
+export default function SignUpForm({ roleIntent = null }) {
   const { signUp, setSheetView } = useAuth();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [choices, setChoices] = useState({ seller: EMPTY_CHOICE, marketer: EMPTY_CHOICE });
+  const [choices, setChoices] = useState({ seller: EMPTY_CHOICE(roleIntent === 'seller') });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -46,7 +43,10 @@ export default function SignUpForm() {
     const found = step === 0 ? validateAccountStep(form) : step === 1 ? validateDeliveryStep(form) : validateRoleChoices(choices);
     setErrors(found);
     if (Object.keys(found).length) return;
-    if (step < 2) { setStep(step + 1); return; }
+    if (step < 2) {
+      setStep(step === 0 && roleIntent ? 2 : step + 1);
+      return;
+    }
 
     // Last step -> create the account.
     setBusy(true);
@@ -55,6 +55,7 @@ export default function SignUpForm() {
         firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email, password: form.password,
         address: { county: form.county, town: form.town, area: form.area, landmark: form.landmark, altPhone: form.altPhone, notes: form.notes },
         roleChoices: choices,
+        accountIntent: roleIntent,
       });
     } catch (err) {
       setFormError(err.message);
@@ -68,7 +69,7 @@ export default function SignUpForm() {
       <div className="steps" aria-label={`Step ${step + 1} of 3`}>
         {[0, 1, 2].map((i) => <span key={i} className={i <= step ? 'on' : ''} />)}
       </div>
-      <h3 className="af-step">{STEP_TITLES[step]}</h3>
+      <h3 className="af-step">{step === 2 && roleIntent === 'seller' ? 'Seller workspace' : STEP_TITLES[step]}</h3>
       <FormError>{formError}</FormError>
 
       {step === 0 && (
@@ -100,7 +101,7 @@ export default function SignUpForm() {
 
       {step === 1 && (
         <React.Fragment>
-          <p className="af-note">Your buyer account is ready without an address. Add delivery details now, or save them for when you place an order.</p>
+          <p className="af-note">Delivery details are optional. Add them now, or save them for when you place an order.</p>
           <Field label="County" error={errors.county}>
             <select className="ai" value={form.county} onChange={set('county')} autoComplete="address-level1">
               <option value="">Select county</option>
@@ -130,7 +131,7 @@ export default function SignUpForm() {
         </React.Fragment>
       )}
 
-      {step === 2 && <RolePicker choices={choices} onChange={setChoices} errors={errors} />}
+      {step === 2 && <RolePicker choices={choices} onChange={setChoices} errors={errors} roleIntent={roleIntent} />}
 
       <div className="af-actions">
         {step > 0 && (
@@ -144,7 +145,7 @@ export default function SignUpForm() {
           </button>
         )}
         <button type="submit" className="btn" disabled={busy}>
-          {step < 2 ? 'Continue' : busy ? 'Creating account…' : 'Create account'}
+          {step < 2 ? 'Continue' : busy ? 'Creating account…' : roleIntent === 'seller' ? 'Create seller account' : 'Create account'}
         </button>
       </div>
       <p className="af-switch">

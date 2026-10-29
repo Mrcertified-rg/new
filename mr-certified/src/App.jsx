@@ -15,8 +15,6 @@ import CertifiedAI from './components/CertifiedAI.jsx';
 import SellerSettings from './components/SellerSettings.jsx';
 import SellerCreate from './components/SellerCreate.jsx';
 import Records from './components/Records.jsx';
-import MarketerFeed from './components/MarketerFeed.jsx';
-import MyPromotions from './components/MyPromotions.jsx';
 import BuyModal from './components/BuyModal.jsx';
 import CreateModal from './components/CreateModal.jsx';
 import CommentsModal from './components/CommentsModal.jsx';
@@ -26,6 +24,7 @@ import ShareSheet from './components/ShareSheet.jsx';
 import Cart from './components/cart.jsx';
 import Dm from './components/DM.jsx';
 import SellerInbox from './components/Sellersindox.jsx';
+import WelcomePage from './components/WelcomePage.jsx';
 import AppBar from './components/layout/AppBar.jsx';
 import BuyerNav from './components/layout/BuyerNav.jsx';
 import SellerNav from './components/layout/SellerNav.jsx';
@@ -41,12 +40,11 @@ import { listFollowedSellers, toggleFollowedSeller } from './social/socialServic
  * -------------------------------------------------------------------------*/
 
 /** First screen of each mode. */
-const HOME = { buyer: 'feed', seller: 'dash', marketer: 'mfeed' };
+const HOME = { buyer: 'feed', seller: 'dash' };
 
-/** Screens that only an UNLOCKED seller / marketer may open. */
+/** Screens that only an unlocked seller may open. */
 const SELLER_SCREENS = ['dash', 'sellerproducts', 'sellerorders', 'customers', 'records', 'marketing', 'ai', 'sellerprofilepage', 'inbox'];
-const MARKETER_SCREENS = ['mfeed', 'mypromos'];
-const roleOfScreen = (s) => (SELLER_SCREENS.includes(s) ? 'seller' : MARKETER_SCREENS.includes(s) ? 'marketer' : null);
+const roleOfScreen = (s) => (SELLER_SCREENS.includes(s) ? 'seller' : null);
 
 /** Buyer screens that need an account (value = wording used in the sign-in popup). */
 const ACCOUNT_SCREENS = {
@@ -62,7 +60,7 @@ function AppInner() {
   const { user, elevatedRole, promptAuth, requireAuth, openRoleAccess, lockRole, simulateApproval } = useAuth();
 
   const [mode, setModeRaw] = useState('buyer');
-  const [screen, setScreen] = useState('feed');
+  const [screen, setScreen] = useState(() => (user ? 'feed' : 'welcome'));
   const [hist, setHist] = useState([]); // back-button history
   const [pid, setPid] = useState(null);
   const [tab, setTab] = useState('Products');
@@ -72,7 +70,6 @@ function AppInner() {
   const [sellerAccount, setSellerAccount] = useState(() => (user ? getBusinessProfile(user.id, 'seller') : null));
   const [storeTheme, setStoreTheme] = useState('#E7B84E');
   const [transactions, setTransactions] = useState(INIT_TX);
-  const [promotedTag, setPromotedTag] = useState(null);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState(ORDERS);
   // MC - keep seller follows attached to the signed-in buyer across sessions
@@ -97,7 +94,7 @@ function AppInner() {
     if (extra && 'pid' in extra) { setPid(extra.pid); setSizeSel(null); }
   };
 
-  /** Leaves Seller/Marketer mode: re-locks it and returns to the marketplace. */
+  /** Leaves Seller mode: re-locks it and returns to the marketplace. */
   const leaveRole = () => { lockRole(); setModeRaw('buyer'); setScreen('feed'); setHist([]); };
 
   const goBack = () => {
@@ -111,7 +108,7 @@ function AppInner() {
   };
 
   /**
-   * Switch into Seller / Marketer mode. ALWAYS asks for that role's login,
+   * Switch into Seller mode. ALWAYS asks for that role's login,
    * even though the buyer is already signed in.
    */
   const enterRole = (role, target) => {
@@ -122,16 +119,18 @@ function AppInner() {
       return;
     }
     openRoleAccess(role, () => {
-      setModeRaw(role);
-      // First time in as THIS role: collect that role's own business details.
       const profile = getBusinessProfile(user.id, role);
+      const destination = profile ? target || HOME[role] : 'sellercreate';
+      setModeRaw(role);
       setSellerAccount(profile);
-      if (!profile) navigate('sellercreate');
-      else navigate(target || HOME[role]);
+      setPid(null);
+      setSizeSel(null);
+      setScreen(destination);
+      setHist(profile && destination !== HOME[role] ? [{ screen: HOME[role], pid: null }] : []);
     });
   };
 
-  /** Used by the menu and by older screens that call setMode('buyer' | 'seller' | 'marketer'). */
+  /** Used by the menu and by older screens that call setMode('buyer' | 'seller'). */
   const switchMode = (m) => {
     if (m === 'buyer') {
       if (mode !== 'buyer' || elevatedRole) leaveRole();
@@ -151,12 +150,16 @@ function AppInner() {
     navigate(scr, extra);
   };
 
-  /** Seller/Marketer setup form finished (business details saved for this user). */
+  /** Seller setup form finished (business details saved for this user). */
   const createAccount = (acc) => {
     if (user) saveBusinessProfile(user.id, acc);
     setSellerAccount(acc);
-    const role = acc.role === 'marketer' ? 'marketer' : 'seller';
-    if (elevatedRole === role) { setModeRaw(role); navigate(HOME[role]); } else enterRole(role);
+    if (elevatedRole === 'seller') {
+      setModeRaw('seller');
+      setScreen(HOME.seller);
+      setPid(null);
+      setHist([]);
+    } else enterRole('seller');
   };
 
   /* ------------------------------ safety nets ------------------------------ */
@@ -165,7 +168,7 @@ function AppInner() {
     const inPrivateArea = mode !== 'buyer' || roleOfScreen(screen) || screen === 'sellercreate';
     if (inPrivateArea && !elevatedRole) {
       setModeRaw('buyer'); setScreen('feed'); setHist([]);
-      if (user) showToast('Seller/Marketer mode locked. Log in again to continue.', 2800);
+      if (user) showToast('Seller mode locked. Log in again to continue.', 2800);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elevatedRole]);
@@ -173,7 +176,7 @@ function AppInner() {
   // Signing out (or switching account) clears everything that belonged to the old user.
   useEffect(() => {
     if (!user) {
-      setModeRaw('buyer'); setScreen('feed'); setHist([]); setCart([]); setDms({}); setFollowing([]); setChatUid(null); setShareFor(null); setSellerAccount(null);
+      setModeRaw('buyer'); setScreen('welcome'); setHist([]); setCart([]); setDms({}); setFollowing([]); setChatUid(null); setShareFor(null); setSellerAccount(null);
     } else {
       setSellerAccount(getBusinessProfile(user.id, 'seller'));
       setFollowing(listFollowedSellers(user.id));
@@ -188,12 +191,6 @@ function AppInner() {
 
   /* ------------------------------ shop actions ------------------------------ */
   const addTx = (t) => setTransactions([t, ...transactions]);
-
-  const promote = (productId) => {
-    if (user?.roles?.marketer?.status !== 'approved') { showToast('Promotions unlock once your marketer account is approved.', 2800); return; }
-    setPromotedTag({ productId, marketerName: sellerAccount ? sellerAccount.name : user.firstName });
-    go('mypromos');
-  };
 
   /* MC - share links and manage product comments */
   const shareProduct = async (productId) => {
@@ -300,8 +297,8 @@ function AppInner() {
   const closeModal = () => setModal(null);
 
   /* --------------------------------- render --------------------------------- */
-  const bar = <AppBar go={go} onBack={goBack} mode={mode} screen={screen} cartCount={cartCount} onSwitchMode={switchMode} />;
-  const bannerRole = mode === 'seller' || mode === 'marketer' ? mode : null;
+  const bar = <AppBar go={go} onBack={goBack} showBack={mode === 'buyer' || hist.length > 0 || screen !== HOME[mode]} mode={mode} screen={screen} cartCount={cartCount} onSwitchMode={switchMode} />;
+  const bannerRole = mode === 'seller' ? mode : null;
   /** Inner screens get the slim top bar (replaces the old bottom tab bar). */
   const withBar = (el) => (
     <React.Fragment>
@@ -317,21 +314,29 @@ function AppInner() {
 
   let body = null;
   if (blocked) body = null;
+  else if (screen === 'welcome') body = (
+    <WelcomePage
+      onBrowse={() => { setModeRaw('buyer'); setScreen('feed'); }}
+      onBuyerSignUp={() => { setModeRaw('buyer'); setScreen('feed'); }}
+      onSellerSignUp={() => { setModeRaw('seller'); setScreen('dash'); setHist([]); }}
+      onWorkspace={() => { setModeRaw('buyer'); setScreen('welcome'); }}
+      onBrowseAsBuyer={() => { setModeRaw('buyer'); setScreen('feed'); }}
+      onSwitchMode={switchMode}
+    />
+  );
   else if (screen === 'sellercreate') body = (
     <React.Fragment>
       <div className="topbar">
         <button type="button" className="icon-btn" onClick={leaveRole} aria-label="Back to marketplace"><ArrowLeftIcon size={19} /></button>
         <span className="pill">Back to marketplace</span>
       </div>
-      <SellerCreate key={elevatedRole || 'seller'} role={elevatedRole === 'marketer' ? 'marketer' : 'seller'} onCreate={createAccount} />
+      <SellerCreate key={elevatedRole || 'seller'} onCreate={createAccount} />
     </React.Fragment>
   );
   // MC - cart actions and order tracking
   else if (screen === 'feed') body = <Feed go={go} catFilter={catFilter} setCatFilter={setCatFilter} cartCount={cartCount} mode={mode} onSwitchMode={switchMode} addToCart={addToCart} onShare={setShareFor} onComment={setCommentPid} commentCount={commentCount} following={following} onFollow={toggleFollow} liked={liked} onToggleLike={toggleLike} />;
   else if (screen === 'reels') body = <Reels go={go} addToCart={addToCart} liked={liked} onToggleLike={toggleLike} onComment={setCommentPid} commentCount={commentCount} onShare={setShareFor} following={following} onFollow={toggleFollow} />;
-  else if (screen === 'mfeed') body = withBar(<MarketerFeed go={go} promotedTag={promotedTag} />);
-  else if (screen === 'mypromos') body = withBar(<MyPromotions promotedTag={promotedTag} go={go} />);
-  else if (screen === 'product') body = withBar(<ProductDetail pid={pid} go={go} onBack={goBack} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} mode={mode} promotedTag={promotedTag} onPromote={promote} addToCart={addToCart} liked={liked.includes(pid)} onToggleLike={() => toggleLike(pid)} />);
+  else if (screen === 'product') body = withBar(<ProductDetail pid={pid} go={go} onBack={goBack} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} addToCart={addToCart} liked={liked.includes(pid)} onToggleLike={() => toggleLike(pid)} />);
   else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} toggleItem={toggleItem} toggleAll={toggleAll} go={go} openModal={openModal} />);
   else if (screen === 'dm') body = withBar(<Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />);
   else if (screen === 'friends' && user) body = withBar(<Friends me={user} go={go} openChat={openChat} following={following} onFollow={toggleFollow} showToast={showToast} dms={dms} />);
@@ -341,7 +346,7 @@ function AppInner() {
   // MC - provide order history and product navigation to tracking
   else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
   else if (screen === 'buyerprofile') body = withBar(<BuyerProfile go={go} openChat={openChat} profileId={pid} profile={pid ? getPerson(pid) : null} />);
-  else if (screen === 'dash') body = withBar(<Dashboard go={go} setMode={switchMode} threads={threads} orders={orders} openModal={openModal} sellerName={sellerAccount?.name} />);
+  else if (screen === 'dash') body = withBar(<Dashboard go={go} threads={threads} orders={orders} openModal={openModal} sellerName={sellerAccount?.name} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} go={go} sellerName={sellerAccount?.name} />);
   else if (screen === 'sellerorders') body = withBar(<SellerOrders orders={orders} onAdvanceOrder={advanceSellerOrder} sellerName={sellerAccount?.name} />);
   else if (screen === 'customers') body = withBar(<Customers orders={orders} sellerName={sellerAccount?.name} />);

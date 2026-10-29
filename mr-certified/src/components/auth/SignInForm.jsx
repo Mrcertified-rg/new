@@ -7,9 +7,9 @@ import { useAuth } from '../../auth/AuthContext.jsx';
 import { parseIdentifier } from '../../auth/validators.js';
 import { Field, PasswordField, FormError } from './FormFields.jsx';
 
-export default function SignInForm() {
+export default function SignInForm({ initialIdentifier = '' }) {
   const { signIn, setSheetView } = useAuth();
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(initialIdentifier);
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');

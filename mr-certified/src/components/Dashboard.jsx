@@ -1,7 +1,7 @@
 import React from 'react';
 import { DASH, PRODUCTS, money, ORDER_STAGES } from '../data.js';
 
-export default function Dashboard({ go, setMode, threads, orders = [], openModal, sellerName = 'Urban Kicks Kenya' }) {
+export default function Dashboard({ go, threads, orders = [], openModal, sellerName = 'Urban Kicks Kenya' }) {
   const sellerProducts = PRODUCTS.filter((product) => product.seller === sellerName);
   const recentOrders = orders
     .filter((order) => sellerProducts.some((product) => product.id === order.pid))
@@ -89,7 +89,6 @@ export default function Dashboard({ go, setMode, threads, orders = [], openModal
           <button type="button" onClick={() => go('records')}><span>▤</span><b>Finances</b><small>Sales and expenses</small><i>›</i></button>
           <button type="button" onClick={() => go('ai')}><span>✦</span><b>Certified AI</b><small>Store insights</small><i>›</i></button>
         </section>
-        <button type="button" className="seller-switch-mode" onClick={() => setMode('buyer')}>Switch to buyer mode</button>
       </div>
     </React.Fragment>
   );

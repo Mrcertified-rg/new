@@ -27,17 +27,15 @@ const PAGE_TITLES = {
   ai: 'Certified AI',
   sellerprofilepage: 'Profile',
   inbox: 'Inbox',
-  mfeed: 'Discover',
-  mypromos: 'My promotions',
 };
 
-export default function AppBar({ go, onBack, mode, screen, cartCount, onSwitchMode }) {
+export default function AppBar({ go, onBack, showBack = true, mode, screen, cartCount, onSwitchMode }) {
   const { user } = useAuth();
   const initials = user ? (user.firstName[0] + user.lastName[0]).toUpperCase() : '';
 
   return (
     <div className={'appbar' + (screen === 'friends' ? ' friends-appbar' : '')}>
-      <button type="button" className="icon-btn appbar-back" onClick={onBack} aria-label="Go back" title="Go back"><ArrowLeftIcon size={21} /></button>
+      {showBack && <button type="button" className="icon-btn appbar-back" onClick={onBack} aria-label="Go back" title="Go back"><ArrowLeftIcon size={21} /></button>}
       <div className="appbar-mode">{PAGE_TITLES[screen] || 'Home'}</div>
       {screen === 'cart'
         ? <button type="button" className="icon-btn" onClick={() => go('orders')} aria-label="View order history" title="Order history"><ReceiptIcon size={19} /></button>
