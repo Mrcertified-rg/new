@@ -102,7 +102,7 @@ export default function AccountMenu({ go, mode = 'buyer', onSwitchMode, cartCoun
               })}
               <div className="menu-sep" />
               <div className="menu-label">SWITCH MODE</div>
-              {MODE_OPTIONS.map((m) => {
+              {MODE_OPTIONS.filter((m) => m.id !== 'buyer' || user.roles.buyer).map((m) => {
                 const Ico = ICONS[m.icon];
                 const status = user.roles[m.id]?.status;
                 const blocked = status === 'rejected' || status === 'suspended';

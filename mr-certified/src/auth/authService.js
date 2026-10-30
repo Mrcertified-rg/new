@@ -106,7 +106,7 @@ const toPublicUser = (u) => ({
   roles: Object.fromEntries(
     Object.entries(u.roles)
       .filter(([role]) => role === 'buyer' || role === 'seller')
-      .map(([role, r]) => [role, { status: r.status, credentialMode: r.credential?.mode || 'same' }]),
+      .map(([role, r]) => [role, { status: r.status }]),
   ),
 });
 
@@ -116,12 +116,6 @@ const findUserById = (id) => loadUsers().find((u) => u.id === id);
 
 function startSession(userId) {
   write(KEYS.session, { userId, expiresAt: Date.now() + SESSION_DAYS * 86400000 });
-}
-
-/** Builds the stored credential for a seller role. */
-async function buildRoleCredential(choice) {
-  if (choice.mode === 'separate') return { mode: 'separate', ...(await hashPassword(choice.password)) };
-  return { mode: 'same' };
 }
 
 /* ------------------------------ sessions ------------------------------ */
@@ -143,8 +137,8 @@ export async function signOutUser() {
 
 /* ------------------------- register / sign in ------------------------- */
 /**
- * Creates a shared login. Buyer access is available by default; Seller
- * workspaces are recorded as PENDING applications, never approved.
+ * Creates a login. Seller-intent signup is seller-only; other signups include
+ * Buyer access. Seller workspaces are recorded as PENDING applications.
  */
 export async function registerUser(form) {
   const email = normalizeEmail(form.email);
@@ -154,9 +148,12 @@ export async function registerUser(form) {
     throw authError('exists', 'An account with this email or phone already exists. Try signing in.');
   }
 
-  const roles = { buyer: { status: 'approved' } };
+  const roles = form.accountIntent === 'seller' ? {} : { buyer: { status: 'approved' } };
   const sellerChoice = form.roleChoices?.seller;
-  if (sellerChoice?.on) roles.seller = { status: 'pending', credential: await buildRoleCredential(sellerChoice) };
+  if (form.accountIntent === 'seller' && !sellerChoice?.on) {
+    throw authError('invalid-role', 'Choose the seller workspace to create a seller account.');
+  }
+  if (sellerChoice?.on) roles.seller = { status: 'pending' };
 
   const user = {
     id: 'u_' + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join(''),
@@ -271,8 +268,7 @@ export async function updateBuyerProfile(userId, profile) {
 /* ---------------------- seller access ---------------------- */
 /**
  * "Log in again" check used every time someone switches into Seller mode.
- * Uses the role's own password if they chose a separate one,
- * otherwise the account password.
+ * Always verifies the shared account password.
  */
 export async function verifyRolePassword(userId, role, password) {
   assertSellerRole(role);
@@ -285,8 +281,7 @@ export async function verifyRolePassword(userId, role, password) {
   const lockKey = `role:${userId}:${role}`;
   assertNotLocked(lockKey);
 
-  const record = entry.credential?.mode === 'separate' ? entry.credential : user.password;
-  if (!(await passwordMatches(password, record))) {
+  if (!(await passwordMatches(password, user.password))) {
     recordFailure(lockKey);
     throw authError('invalid', `Wrong password for ${ROLE_LABEL[role]} mode.`);
   }
@@ -298,7 +293,7 @@ export async function verifyRolePassword(userId, role, password) {
  * Existing buyer asks for Seller access. Always starts as PENDING and
  * requires the account password (so a borrowed phone cannot add roles).
  */
-export async function applyForRole(userId, role, choice, accountPassword) {
+export async function applyForRole(userId, role, accountPassword) {
   assertSellerRole(role);
   const users = loadUsers();
   const user = users.find((u) => u.id === userId);
@@ -313,7 +308,7 @@ export async function applyForRole(userId, role, choice, accountPassword) {
   }
   clearFailures(lockKey);
 
-  user.roles[role] = { status: 'pending', credential: await buildRoleCredential(choice) };
+  user.roles[role] = { status: 'pending' };
   saveUsers(users);
   return toPublicUser(user);
 }

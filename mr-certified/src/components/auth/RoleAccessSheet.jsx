@@ -1,7 +1,7 @@
 /**
  * components/auth/RoleAccessSheet.jsx
  * The "log in again" popup shown every time someone switches into Seller mode.
- *   mode "login": they already hold the role -> enter its password.
+ *   mode "login": they already hold the role -> enter the account password.
  *   mode "apply": they never applied -> choose a login, confirm account
  *                 password, and the application is saved as PENDING.
  * The buyer session underneath is never touched.
@@ -9,24 +9,21 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { ROLE_LABEL, STATUS_LABEL } from '../../auth/config.js';
-import { passwordProblem } from '../../auth/validators.js';
 import { PasswordField, FormError } from './FormFields.jsx';
-import RoleCredentialChoice from './RoleCredentialChoice.jsx';
 import { CloseIcon, LockIcon, StoreIcon } from '../ui/Icons.jsx';
 
 export default function RoleAccessSheet() {
   const { user, roleSheet, closeRoleAccess, unlockRole, applyRole } = useAuth();
   const [password, setPassword] = useState('');
-  const [choice, setChoice] = useState({ on: true, mode: 'same', password: '' });
   const [error, setError] = useState('');
-  const [errs, setErrs] = useState({ pw: '', role: '' }); // pw = password field, role = separate role password
+  const [errs, setErrs] = useState({ pw: '' });
   const [busy, setBusy] = useState(false);
 
   // Start every time the popup opens with a clean form.
   useEffect(() => {
     if (roleSheet.open) {
-      setPassword(''); setChoice({ on: true, mode: 'same', password: '' });
-      setError(''); setErrs({ pw: '', role: '' }); setBusy(false);
+      setPassword('');
+      setError(''); setErrs({ pw: '' }); setBusy(false);
     }
   }, [roleSheet.open, roleSheet.role, roleSheet.mode]);
 
@@ -43,20 +40,18 @@ export default function RoleAccessSheet() {
   const label = ROLE_LABEL[role];
   const Icon = StoreIcon;
   const status = user.roles[role]?.status;
-  const separate = user.roles[role]?.credentialMode === 'separate';
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    const found = { pw: '', role: '' };
+    const found = { pw: '' };
     if (!password) found.pw = 'Enter your password.';
-    if (mode === 'apply' && choice.mode === 'separate') found.role = passwordProblem(choice.password);
     setErrs(found);
-    if (found.pw || found.role) return;
+    if (found.pw) return;
     setBusy(true);
     try {
       if (mode === 'login') await unlockRole(role, password);
-      else await applyRole(role, choice, password);
+      else await applyRole(role, password);
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -88,17 +83,8 @@ export default function RoleAccessSheet() {
             <div className="ras-who"><LockIcon size={16} /><span>{user.firstName} {user.lastName} · {user.email}</span></div>
           )}
 
-          {mode === 'apply' && (
-            <RoleCredentialChoice
-              role={role}
-              value={choice}
-              onChange={setChoice}
-              error={errs.role}
-            />
-          )}
-
           <PasswordField
-            label={mode === 'login' ? (separate ? `${label} password` : 'Account password') : 'Confirm account password'}
+            label="Account password"
             value={password}
             onChange={setPassword}
             error={errs.pw}

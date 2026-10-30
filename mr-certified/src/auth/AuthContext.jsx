@@ -139,8 +139,8 @@ export function AuthProvider({ children }) {
   };
 
   const unlockRole = async (role, password) => finishRole(role, await verifyRolePassword(user.id, role, password));
-  const applyRole = async (role, choice, accountPassword) =>
-    finishRole(role, await applyForRole(user.id, role, choice, accountPassword));
+  const applyRole = async (role, accountPassword) =>
+    finishRole(role, await applyForRole(user.id, role, accountPassword));
   const lockRole = useCallback(() => setElevatedRole(null), []);
 
   /** DEMO ONLY - see authService.setRoleStatusDemo. */

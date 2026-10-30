@@ -83,15 +83,11 @@ export function validateDeliveryStep(f) {
   return e;
 }
 
-/** Step 3: checks the separate-login password and the verification details of every ticked role. */
+/** Step 3: checks the verification details of every selected role. */
 export function validateRoleChoices(choices) {
   const e = {};
   Object.entries(choices).forEach(([role, c]) => {
     if (!c.on) return;
-    if (c.mode === 'separate') {
-      const p = passwordProblem(c.password);
-      if (p) e[role] = p;
-    }
     const b = c.biz || {};
     const biz = {};
     if (String(b.name || '').trim().length < 2) biz.name = 'Enter your business name.';

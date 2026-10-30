@@ -1,6 +1,6 @@
 /**
  * components/auth/SignUpForm.jsx
- * Shared-account signup with optional delivery details and role workspace setup.
+ * Account signup with optional delivery details and role workspace setup.
  * Seller-intent signup skips delivery details and opens directly on seller setup.
  */
 import React, { useState } from 'react';
@@ -18,7 +18,7 @@ const EMPTY_FORM = {
   county: '', town: '', area: '', landmark: '', altPhone: '', notes: '',
 };
 const EMPTY_BIZ = { name: '', id: '', kra: '', phone: '' };
-const EMPTY_CHOICE = (on = false) => ({ on, mode: 'same', password: '', biz: { ...EMPTY_BIZ } });
+const EMPTY_CHOICE = (on = false) => ({ on, biz: { ...EMPTY_BIZ } });
 
 export default function SignUpForm({ roleIntent = null }) {
   const { signUp, setSheetView } = useAuth();

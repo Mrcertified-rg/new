@@ -60,7 +60,7 @@ function AppInner() {
   const { user, elevatedRole, promptAuth, requireAuth, openRoleAccess, lockRole, simulateApproval } = useAuth();
 
   const [mode, setModeRaw] = useState('buyer');
-  const [screen, setScreen] = useState(() => (user ? 'feed' : 'welcome'));
+  const [screen, setScreen] = useState(() => (user?.roles?.buyer ? 'feed' : 'welcome'));
   const [hist, setHist] = useState([]); // back-button history
   const [pid, setPid] = useState(null);
   const [tab, setTab] = useState('Products');
@@ -97,7 +97,7 @@ function AppInner() {
   };
 
   /** Leaves Seller mode: re-locks it and returns to the marketplace. */
-  const leaveRole = () => { lockRole(); setModeRaw('buyer'); setScreen('feed'); setHist([]); };
+  const leaveRole = () => { lockRole(); setModeRaw('buyer'); setScreen(user?.roles?.buyer ? 'feed' : 'welcome'); setHist([]); };
 
   const goBack = () => {
     const prev = hist[hist.length - 1];
@@ -135,6 +135,7 @@ function AppInner() {
   /** Used by the menu and by older screens that call setMode('buyer' | 'seller'). */
   const switchMode = (m) => {
     if (m === 'buyer') {
+      if (user && !user.roles?.buyer) { leaveRole(); return; }
       if (mode !== 'buyer' || elevatedRole) leaveRole();
       else if (screen !== 'feed') navigate('feed');
       return;

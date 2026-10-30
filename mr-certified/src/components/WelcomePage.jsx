@@ -40,11 +40,13 @@ export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, o
               <span className="entry-kicker">YOUR MERQO</span>
               <h2>Choose a workspace</h2>
             </div>
-            <button type="button" className="entry-workspace-option" onClick={onBrowseAsBuyer}>
-              <span className="entry-workspace-icon"><BagIcon size={20} /></span>
-              <span><b>Buyer</b><small>Discover considered finds and track orders</small></span>
-              <span className="entry-chevron">↗</span>
-            </button>
+            {user.roles.buyer && (
+              <button type="button" className="entry-workspace-option" onClick={onBrowseAsBuyer}>
+                <span className="entry-workspace-icon"><BagIcon size={20} /></span>
+                <span><b>Buyer</b><small>Discover considered finds and track orders</small></span>
+                <span className="entry-chevron">↗</span>
+              </button>
+            )}
             <button type="button" className="entry-workspace-option" onClick={() => onSwitchMode('seller')}>
               <span className="entry-workspace-icon"><StoreIcon size={20} /></span>
               <span>
