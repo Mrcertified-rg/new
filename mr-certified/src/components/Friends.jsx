@@ -12,7 +12,9 @@ function Person({ person, sub, children, className = '', onClick }) {
       if (event.target.closest('button')) return;
       onClick?.();
     }}>
-      <span className="pa mq-chat-list-avatar">{personInitials(person)}</span>
+      <span className={'pa mq-chat-list-avatar' + (person.profilePicture ? ' has-photo' : '')}>
+        {person.profilePicture ? <img src={person.profilePicture} alt="" /> : personInitials(person)}
+      </span>
       <div className="pi mq-chat-list-copy"><b>{fullName(person)}</b>{sub && <span>{sub}</span>}</div>
       {children}
     </div>
@@ -99,7 +101,7 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
                   <b>{product.seller}</b>
                   <span>{product.name} · {(last.from === 'buyer' ? 'You: ' : 'Seller: ') + last.text}</span>
                 </div>
-                <span className="mq-chat-type product">Product</span>
+                <span className="mq-chat-list-time">{new Date(last.time).toLocaleDateString([], { day: 'numeric', month: 'short' })}</span>
               </div>
             ))}
           </React.Fragment>

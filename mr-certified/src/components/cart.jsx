@@ -11,7 +11,6 @@ export default function Cart({ cart, setQty, removeItem, toggleItem, toggleAll, 
 
   return (
     <React.Fragment>
-      <div className="topbar"><h1>Cart{count > 0 ? ' (' + count + ')' : ''}</h1></div>
       <div className="screen pad">
         {!cart.length && (
           <div className="card" style={{ textAlign: 'center', padding: 26 }}>

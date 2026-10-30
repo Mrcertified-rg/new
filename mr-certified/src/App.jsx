@@ -91,7 +91,9 @@ function AppInner() {
   const navigate = (scr, extra) => {
     setHist((h) => [...h, { screen, pid }].slice(-20));
     setScreen(scr);
-    if (extra && 'pid' in extra) { setPid(extra.pid); setSizeSel(null); }
+    if (extra && 'pid' in extra) setPid(extra.pid);
+    else setPid(null);
+    setSizeSel(null);
   };
 
   /** Leaves Seller mode: re-locks it and returns to the marketplace. */
@@ -338,9 +340,9 @@ function AppInner() {
   else if (screen === 'reels') body = <Reels go={go} addToCart={addToCart} liked={liked} onToggleLike={toggleLike} onComment={setCommentPid} commentCount={commentCount} onShare={setShareFor} following={following} onFollow={toggleFollow} />;
   else if (screen === 'product') body = withBar(<ProductDetail pid={pid} go={go} onBack={goBack} sizeSel={sizeSel} setSizeSel={setSizeSel} openModal={openModal} addToCart={addToCart} liked={liked.includes(pid)} onToggleLike={() => toggleLike(pid)} />);
   else if (screen === 'cart') body = withBar(<Cart cart={cart} setQty={setQty} removeItem={removeItem} toggleItem={toggleItem} toggleAll={toggleAll} go={go} openModal={openModal} />);
-  else if (screen === 'dm') body = withBar(<Dm pid={pid} dms={dms} send={sendDm} go={go} viewer={mode === 'seller' ? 'seller' : 'buyer'} />);
+  else if (screen === 'dm') body = <Dm pid={pid} dms={dms} send={sendDm} go={go} onBack={goBack} viewer={mode === 'seller' ? 'seller' : 'buyer'} user={user} />;
   else if (screen === 'friends' && user) body = withBar(<Friends me={user} go={go} openChat={openChat} following={following} onFollow={toggleFollow} showToast={showToast} dms={dms} />);
-  else if (screen === 'chat' && user && chatUid) body = withBar(<Chat me={user} otherId={chatUid} go={go} />);
+  else if (screen === 'chat' && user && chatUid) body = <Chat me={user} otherId={chatUid} go={go} onBack={goBack} />;
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
@@ -358,7 +360,7 @@ function AppInner() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {body}
-      {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile', 'product'].includes(screen) && <BuyerNav screen={screen} go={go} goHome={goHome} cartCount={cartCount} />}
+      {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile', 'product', 'sellerprofile'].includes(screen) && <BuyerNav screen={screen} go={go} goHome={goHome} cartCount={cartCount} />}
       {mode === 'seller' && elevatedRole === 'seller' && ['dash', 'sellerproducts', 'sellerorders', 'customers', 'records', 'marketing', 'ai', 'sellerprofilepage', 'inbox'].includes(screen) && <SellerNav screen={screen} go={go} />}
       {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}

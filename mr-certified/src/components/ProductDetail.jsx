@@ -11,7 +11,7 @@ export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,addToCar
    <div className="pd-body">
     <div className="row" onClick={()=>go('sellerprofile',{pid:p.id})}>
      <div style={{fontWeight:600}}>{p.seller} <span className="badge">✓</span></div>
-     <span className="pill">View profile ›</span>
+     <span className="product-view-profile">View profile ›</span>
     </div>
     <h2 style={{marginTop:10}}>{p.name}</h2>
     <div className="price" style={{fontSize:19,margin:'4px 0 8px'}}>{money(p.price)}</div>
@@ -35,13 +35,13 @@ export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,addToCar
      ))}
     </div>
    </div>
-   <div className="buybar">
-    <button type="button" className={'market-like' + (liked ? ' on' : '')} style={{flex:1}} onClick={onToggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike product' : 'Like product'} title={liked ? 'Unlike' : 'Like'}>
-     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+    <div className="buybar">
+     <button type="button" className={'market-like product-detail-like' + (liked ? ' on' : '')} onClick={onToggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike product' : 'Like product'} title={liked ? 'Unlike' : 'Like'}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
      <span>{liked ? 'Liked' : 'Like'}</span>
     </button>
-    <button className="btn green" style={{flex:2}} onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart — {money(p.price)}</button>
-   </div>
+     <button className="btn green product-detail-cart" onClick={()=>addToCart(p.id,sel)}>🛒 Add to cart — {money(p.price)}</button>
+    </div>
   </div>
  );
 }

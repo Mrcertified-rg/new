@@ -34,12 +34,12 @@ export default function AppBar({ go, onBack, showBack = true, mode, screen, cart
   const initials = user ? (user.firstName[0] + user.lastName[0]).toUpperCase() : '';
 
   return (
-    <div className={'appbar' + (screen === 'friends' ? ' friends-appbar' : '')}>
+    <div className={'appbar' + (screen === 'friends' ? ' friends-appbar' : '') + (screen === 'product' || screen === 'sellerprofile' ? ' product-appbar' : '')}>
       {showBack && <button type="button" className="icon-btn appbar-back" onClick={onBack} aria-label="Go back" title="Go back"><ArrowLeftIcon size={21} /></button>}
-      <div className="appbar-mode">{PAGE_TITLES[screen] || 'Home'}</div>
+      {screen !== 'product' && <div className="appbar-mode">{PAGE_TITLES[screen] || 'Home'}{screen === 'cart' && cartCount > 0 ? ` (${cartCount})` : ''}</div>}
       {screen === 'cart'
         ? <button type="button" className="icon-btn" onClick={() => go('orders')} aria-label="View order history" title="Order history"><ReceiptIcon size={19} /></button>
-        : screen === 'friends'
+        : screen === 'friends' || screen === 'product' || screen === 'sellerprofile'
           ? <span className={'icon-btn avatar-btn' + (user?.profilePicture ? ' has-photo' : '')} aria-label="Profile picture">
             {user?.profilePicture
               ? <img className="account-profile-picture" src={user.profilePicture} alt="" />

@@ -62,7 +62,7 @@ export default function BuyerProfile({ go, openChat, profileId, profile }) {
   const [form, setForm] = useState(null);
 
   useEffect(() => {
-    if (!user || profileId) return;
+    if (!user || (profileId && profile)) return;
     setForm({
       firstName: user.firstName || '',
       lastName: user.lastName || '',
@@ -75,17 +75,17 @@ export default function BuyerProfile({ go, openChat, profileId, profile }) {
       newPassword: '',
       address: { ...EMPTY_ADDRESS, ...(user.address || {}) },
     });
-  }, [user, profileId]);
+  }, [user, profileId, profile]);
 
   useEffect(() => {
-    if (profileId) return undefined;
+    if (profileId && profile) return undefined;
     const syncTheme = (event) => {
       const theme = event.detail === 'light' ? 'light' : 'dark';
       setForm((current) => current ? { ...current, theme } : current);
     };
     window.addEventListener('merqo-theme-change', syncTheme);
     return () => window.removeEventListener('merqo-theme-change', syncTheme);
-  }, [profileId]);
+  }, [profileId, profile]);
 
   if (profileId && profile) {
     return (
