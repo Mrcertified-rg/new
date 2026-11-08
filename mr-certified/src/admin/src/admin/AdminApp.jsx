@@ -3,7 +3,33 @@ import { isSetUp, setUpAdmin, signInAdmin, hasSession, touchSession, signOutAdmi
 import { listAccounts, listOrders, getStats, setSellerStatus, listAudit, logAudit, mask, money, when } from './adminData.js';
 import './admin.css';
 
-const TABS = [['overview', 'Overview'], ['sellers', 'Seller approvals'], ['accounts', 'Accounts'], ['orders', 'Transactions'], ['audit', 'Audit log']];
+const NAV_GROUPS = [
+  {
+    title: "WORKSPACE",
+    items: [
+      { id: "overview", label: "Overview", icon: "◫" },
+    ],
+  },
+  {
+    title: "MARKETPLACE",
+    items: [
+      { id: "sellers", label: "Seller verification", icon: "♙", badge: true },
+      { id: "accounts", label: "User management", icon: "♧" },
+      { id: "orders", label: "Orders", icon: "▤" },
+      { id: "audit", label: "Audit log", icon: "◷" },
+    ],
+  },
+];
+
+const FUTURE_MODULES = [
+  "Products",
+  "Payments & escrow",
+  "Disputes",
+  "Deliveries",
+  "Marketing",
+  "Analytics",
+  "Settings",
+];
 
 export default function AdminApp() {
   const [authed, setAuthed] = useState(hasSession());
@@ -66,63 +92,396 @@ function Gate({ onDone, notice }) {
 
 /* -------------------------------- console -------------------------------- */
 function Console({ onLock }) {
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState("overview");
   const [tick, setTick] = useState(0);
-  const refresh = () => setTick((t) => t + 1);
+  const [search, setSearch] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const refresh = () => setTick(t => t + 1);
 
   useEffect(() => {
     const t = setInterval(refresh, 5000);
-    window.addEventListener('storage', refresh);
-    return () => { clearInterval(t); window.removeEventListener('storage', refresh); };
+    window.addEventListener("storage", refresh);
+
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("storage", refresh);
+    };
   }, []);
 
   const accounts = useMemo(() => listAccounts(), [tick]);
   const orders = useMemo(() => listOrders(), [tick]);
-  const stats = useMemo(() => getStats(accounts, orders), [accounts, orders]);
+  const stats = useMemo(
+    () => getStats(accounts, orders),
+    [accounts, orders]
+  );
+
+  const pageNames = {
+    overview: "Overview",
+    sellers: "Seller verification",
+    accounts: "User management",
+    orders: "Orders & transactions",
+    audit: "Audit history",
+  };
 
   return (
     <div className="ad-shell">
-      <header className="ad-top">
-        <b>MERQO · Administrator</b>
-        <span className="ad-who">{adminEmail()}</span>
-        <button className="ad-btn" onClick={onLock}>Lock</button>
-      </header>
-      <nav className="ad-tabs">
-        {TABS.map(([id, label]) => (
-          <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
-            {label}{id === 'sellers' && stats.sellersPending > 0 && <i>{stats.sellersPending}</i>}
+
+      {/* SIDEBAR */}
+      <aside className={`ad-sidebar ${sidebarOpen ? "open" : ""}`}>
+
+        <div className="ad-brand">
+          <div className="ad-logo">MC</div>
+          <div>
+            <strong>MR CERTIFIED</strong>
+            <small>ADMINISTRATION</small>
+          </div>
+          <button
+            className="ad-mobile-close"
+            onClick={() => setSidebarOpen(false)}
+          >×</button>
+        </div>
+
+        <div className="ad-admin-profile">
+          <div className="ad-avatar">A</div>
+          <div>
+            <strong>Administrator</strong>
+            <small>Platform control</small>
+          </div>
+          <span className="ad-online-dot" />
+        </div>
+
+        <div className="ad-nav-search">
+          <input
+            placeholder="Find a section..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <span>⌕</span>
+        </div>
+
+        <nav className="ad-navigation">
+
+          {NAV_GROUPS.map(group => {
+            const items = group.items.filter(item =>
+              item.label.toLowerCase().includes(search.toLowerCase())
+            );
+
+            if (!items.length) return null;
+
+            return (
+              <div className="ad-nav-group" key={group.title}>
+                <small className="ad-nav-heading">{group.title}</small>
+
+                {items.map(item => (
+                  <button
+                    key={item.id}
+                    className={`ad-nav-item ${tab === item.id ? "active" : ""}`}
+                    onClick={() => {
+                      setTab(item.id);
+                      setSidebarOpen(false);
+                    }}
+                  >
+                    <span className="ad-nav-icon">{item.icon}</span>
+                    <span>{item.label}</span>
+
+                    {item.badge && stats.sellersPending > 0 && (
+                      <i>{stats.sellersPending}</i>
+                    )}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+
+          {!search && (
+            <div className="ad-nav-group">
+              <small className="ad-nav-heading">COMING NEXT</small>
+
+              {FUTURE_MODULES.map(item => (
+                <div className="ad-future-item" key={item}>
+                  <span>{item}</span>
+                  <small>Planned</small>
+                </div>
+              ))}
+            </div>
+          )}
+
+        </nav>
+
+        <div className="ad-sidebar-bottom">
+          <div className="ad-security">
+            <span>●</span>
+            Admin session protected
+            <small>Demo authentication</small>
+          </div>
+
+          <button className="ad-logout" onClick={onLock}>
+            ↪ Lock administrator
           </button>
-        ))}
-      </nav>
-      <main className="ad-main">
-        {tab === 'overview' && <Overview stats={stats} go={setTab} />}
-        {tab === 'sellers' && <Sellers accounts={accounts} onChange={refresh} />}
-        {tab === 'accounts' && <Accounts accounts={accounts} />}
-        {tab === 'orders' && <Orders orders={orders} stats={stats} />}
-        {tab === 'audit' && <Audit tick={tick} />}
-      </main>
+        </div>
+
+      </aside>
+
+      {/* MAIN WORKSPACE */}
+      <section className="ad-workspace">
+
+        <header className="ad-header">
+          <button
+            className="ad-menu-toggle"
+            onClick={() => setSidebarOpen(true)}
+          >☰</button>
+
+          <div className="ad-breadcrumb">
+            <small>MR CERTIFIED / ADMIN</small>
+            <strong>{pageNames[tab]}</strong>
+          </div>
+
+          <div className="ad-header-actions">
+            <button className="ad-refresh" onClick={refresh}>
+              ↻ <span>Refresh</span>
+            </button>
+
+            <div className="ad-header-user">
+              <div className="ad-avatar">A</div>
+              <div>
+                <strong>Administrator</strong>
+                <small>{adminEmail()}</small>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="ad-main">
+
+          {tab === "overview" && (
+            <Overview
+              stats={stats}
+              accounts={accounts}
+              orders={orders}
+              go={setTab}
+            />
+          )}
+
+          {tab === "sellers" && (
+            <>
+              <PageHeading
+                title="Seller verification"
+                description="Review applications and control seller access."
+              />
+              <Sellers accounts={accounts} onChange={refresh} />
+            </>
+          )}
+
+          {tab === "accounts" && (
+            <>
+              <PageHeading
+                title="User management"
+                description="Search and monitor registered marketplace users."
+              />
+              <Accounts accounts={accounts} />
+            </>
+          )}
+
+          {tab === "orders" && (
+            <>
+              <PageHeading
+                title="Orders & transactions"
+                description="Monitor customer purchases and order progress."
+              />
+              <Orders orders={orders} stats={stats} />
+            </>
+          )}
+
+          {tab === "audit" && (
+            <>
+              <PageHeading
+                title="Audit history"
+                description="Review administrator actions and important changes."
+              />
+              <Audit tick={tick} />
+            </>
+          )}
+
+        </main>
+
+        <footer className="ad-footer">
+          <span>MR CERTIFIED © 2026</span>
+          <span>Marketplace Administration</span>
+        </footer>
+
+      </section>
+    </div>
+  );
+}
+
+function PageHeading({ title, description }) {
+  return (
+    <div className="ad-page-heading">
+      <div>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
     </div>
   );
 }
 
 const Stat = ({ label, value }) => <div className="ad-card ad-stat"><span>{label}</span><b>{value}</b></div>;
 
-function Overview({ stats, go }) {
+function Overview({ stats, accounts, orders, go }) {
+  const pending = accounts.filter(a => a.seller === "pending");
+
+  const recentOrders = [...orders].slice(0, 5);
+
   return (
     <>
-      {stats.sellersPending > 0 && (
-        <button className="ad-alert" onClick={() => go('sellers')}>
-          {stats.sellersPending} seller application{stats.sellersPending > 1 ? 's' : ''} waiting for review →
-        </button>
-      )}
-      <div className="ad-grid">
-        <Stat label="Accounts" value={stats.accounts} />
-        <Stat label="Approved sellers" value={stats.sellersApproved} />
-        <Stat label="Pending sellers" value={stats.sellersPending} />
-        <Stat label="Orders" value={stats.orders} />
-        <Stat label="Order volume" value={money(stats.volume)} />
-        <Stat label="Held in escrow" value={money(stats.escrow)} />
+      <PageHeading
+        title="Marketplace overview"
+        description="Your command centre for everything happening on Mr Certified."
+      />
+
+      {/* ALERTS */}
+      <div className="ad-welcome">
+        <div>
+          <small>YOUR MARKETPLACE CONTROL CENTRE</small>
+          <h2>Good day, Administrator.</h2>
+          <p>
+            Here is what is happening across your marketplace.
+          </p>
+        </div>
+        <div className="ad-welcome-icon">♛</div>
       </div>
+
+      {/* BUSINESS STATISTICS */}
+      <div className="ad-section-title">
+        <h3>Marketplace performance</h3>
+        <span>Current recorded figures</span>
+      </div>
+
+      <div className="ad-grid">
+
+        <Stat label="Registered accounts" value={stats.accounts} />
+        <Stat label="Approved sellers" value={stats.sellersApproved} />
+        <Stat label="Pending applications" value={stats.sellersPending} />
+        <Stat label="Total orders" value={stats.orders} />
+        <Stat label="Order volume" value={money(stats.volume)} />
+        <Stat label="Unreleased order value" value={money(stats.escrow)} />
+
+      </div>
+
+      {/* ACTION CENTRE */}
+      <div className="ad-section-title">
+        <h3>Action centre</h3>
+        <span>Things requiring your attention</span>
+      </div>
+
+      <div className="ad-overview-grid">
+
+        <div className="ad-card ad-action-panel">
+          <div className="ad-panel-top">
+            <h3>Seller applications</h3>
+            <span className="ad-count">{pending.length}</span>
+          </div>
+
+          {pending.length === 0 ? (
+            <p className="ad-empty">
+              No pending seller applications.
+            </p>
+          ) : (
+            pending.slice(0, 4).map(seller => (
+              <div className="ad-pending-row" key={seller.id}>
+                <div className="ad-avatar">
+                  {(seller.name || "S")[0].toUpperCase()}
+                </div>
+
+                <div className="ad-pending-info">
+                  <strong>{seller.business?.name || seller.name}</strong>
+                  <small>{seller.email}</small>
+                </div>
+
+                <span className="ad-badge pending">Pending</span>
+              </div>
+            ))
+          )}
+
+          <button
+            className="ad-primary-link"
+            onClick={() => go("sellers")}
+          >
+            Review applications →
+          </button>
+        </div>
+
+        <div className="ad-card ad-action-panel">
+          <div className="ad-panel-top">
+            <h3>Quick navigation</h3>
+          </div>
+
+          <button className="ad-quick-link" onClick={() => go("accounts")}>
+            <span>♧</span>
+            <div>
+              <strong>Manage accounts</strong>
+              <small>Find buyers and sellers</small>
+            </div>
+            →
+          </button>
+
+          <button className="ad-quick-link" onClick={() => go("orders")}>
+            <span>▤</span>
+            <div>
+              <strong>Monitor orders</strong>
+              <small>Review marketplace transactions</small>
+            </div>
+            →
+          </button>
+
+          <button className="ad-quick-link" onClick={() => go("audit")}>
+            <span>◷</span>
+            <div>
+              <strong>View audit history</strong>
+              <small>Track administrator actions</small>
+            </div>
+            →
+          </button>
+        </div>
+
+      </div>
+
+      {/* RECENT ORDERS */}
+      <div className="ad-section-title">
+        <h3>Recent orders</h3>
+        <button className="ad-primary-link" onClick={() => go("orders")}>
+          View all →
+        </button>
+      </div>
+
+      <div className="ad-card">
+        {recentOrders.length === 0 ? (
+          <p className="ad-empty">No orders recorded yet.</p>
+        ) : (
+          <div className="ad-recent-list">
+            {recentOrders.map(order => (
+              <div className="ad-recent-row" key={order.id}>
+                <div>
+                  <strong>#{String(order.id).slice(-6)}</strong>
+                  <small>{order.product}</small>
+                </div>
+
+                <strong>{money(order.amount)}</strong>
+
+                <span className="ad-order-stage">
+                  {order.stageLabel}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p className="ad-data-note">
+        Figures reflect records currently available to the administrator.
+        They are not independently verified financial balances.
+      </p>
     </>
   );
 }

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { THEMES } from '../data.js';
+import ThemeSwitch from './ui/ThemeSwitch.jsx';
 
 export default function SellerSettings({setMode,sellerAccount,go,storeTheme,setStoreTheme}){
  return (
@@ -25,6 +26,11 @@ export default function SellerSettings({setMode,sellerAccount,go,storeTheme,setS
        <div key={t.n} className={'swatch '+(storeTheme===t.c?'on':'')} style={{background:t.c}} title={t.n} onClick={()=>setStoreTheme(t.c)}></div>
       ))}
      </div>
+    </div>
+    <div className="card">
+     <b style={{fontSize:13.5}}>Appearance</b>
+     <p className="pill" style={{margin:'4px 0 12px'}}>Choose how MERQO looks on this device.</p>
+     <ThemeSwitch />
     </div>
     <div className="card row" onClick={()=>go('records')}><span>Business records & balance sheet</span><span className="pill">Manage ›</span></div>
     <button className="btn ghost" style={{width:'100%'}} onClick={()=>setMode('buyer')}>🛍️ Switch to buyer mode</button>

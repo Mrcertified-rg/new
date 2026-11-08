@@ -1,0 +1,67 @@
+:root {
+  font-family: Inter, Arial, sans-serif;
+
+  --gold: #d6a83e;
+  --gold-hover: #edc45d;
+
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-soft: #f0f1f4;
+
+  --text: #20232a;
+  --muted: #747985;
+  --border: #e2e4e9;
+
+  --success: #159b68;
+  --danger: #dc4545;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #101114;
+  --surface: #191b20;
+  --surface-soft: #22252b;
+
+  --text: #f4f4f4;
+  --muted: #a1a5af;
+  --border: #30333a;
+
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  transition: background .25s ease, color .25s ease;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+.theme-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 14px;
+}
+
+.theme-muted {
+  color: var(--muted);
+}
+
+.theme-primary {
+  background: var(--gold);
+  color: #171717;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theme-primary:hover {
+  background: var(--gold-hover);
+}

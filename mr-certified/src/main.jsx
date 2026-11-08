@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
 import './responsive.css'; // must stay AFTER styles.css
+import './theme.css';
+import { ThemeProvider } from './ThemeContext.jsx';
 
 /* Keep the app as tall as the VISIBLE screen (address bars, on-screen keyboard). */
 const vv = window.visualViewport;
@@ -20,4 +22,8 @@ if (vv) {
   vv.addEventListener('scroll', fitHeight);
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>
+);

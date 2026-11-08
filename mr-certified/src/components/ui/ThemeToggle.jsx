@@ -1,23 +1,15 @@
-import React, { useState, useCallback } from 'react';
-import { applyThemePreference, getThemePreference } from '../../themePreference.js';
-
-/* Light / dark theme. The choice is saved on this device and applied before the first render (no flash). */
-applyThemePreference(getThemePreference());
+import React from 'react';
+import { useTheme } from '../../ThemeContext.jsx';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState(getThemePreference);
-  const toggle = useCallback(() => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    applyThemePreference(next);
-    setTheme(next);
-  }, [theme]);
+  const { theme, toggleTheme } = useTheme();
 
   const toLight = theme === 'dark';
   return (
     <button
       type="button"
       className="theme-toggle"
-      onClick={toggle}
+      onClick={toggleTheme}
       aria-label={toLight ? 'Switch to light mode' : 'Switch to dark mode'}
       title={toLight ? 'Light mode' : 'Dark mode'}
     >
