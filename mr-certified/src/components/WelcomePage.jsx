@@ -23,6 +23,7 @@ function PhonePreview() {
   return (
     <div className="wl-phone" aria-hidden="true">
       <div className="wl-screen">
+        <div className="wl-status"><span>9:41</span><span className="wl-status-icons"><i /><i /><b /></span></div>
         <span className="wl-notch" />
         <div className="wl-app-logo">MERQO<i>.</i></div>
         <div className="wl-search"><SearchIcon size={13} /> Search products…</div>
@@ -37,6 +38,12 @@ function PhonePreview() {
             </div>
           ))}
         </div>
+        <div className="wl-enterprise">
+          <span className="wl-enterprise-mark"><StoreIcon size={15} /></span>
+          <span className="wl-enterprise-copy"><b>CERTIFIED ENTERPRISES</b><small>Verified business</small></span>
+          <span className="wl-certified-seal"><ShieldIcon size={15} /><small>CERTIFIED</small></span>
+        </div>
+        <div className="wl-phone-nav"><span>⌂<small>Home</small></span><span>⌕<small>Search</small></span><span>▢<small>Bag</small></span><span>◯<small>Profile</small></span></div>
       </div>
     </div>
   );
