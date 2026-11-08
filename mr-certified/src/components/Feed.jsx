@@ -332,7 +332,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
         )}
       </div>
 
-      {/* ---------- filters panel (opens in place, pushes content down) ---------- */}
+      {/* ---------- filters panel (opens in place, pushes mc content down) ---------- */}
       {panelOpen && (
         <div className="mc-panel" role="region" aria-label="Filters">
           <div className="fgrid">
