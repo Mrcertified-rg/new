@@ -1,4 +1,4 @@
-// MC
+// M.C
 import React, { useEffect, useState } from 'react';
 import {
   ArrowRightIcon, BagIcon, CartIcon, CloseIcon, LockIcon, PinIcon, SearchIcon,
