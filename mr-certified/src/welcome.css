@@ -99,3 +99,17 @@
   .wl-trust li+li{border-left:1px solid rgba(255,255,255,.14);}
 }
 @media (max-height:640px) and (max-width:899px){ .wl h1 em{font-size:clamp(52px,12vw,90px);} .wl-hero{padding:10px 0 14px;} }
+
+/* Keep the full reference photo as a quiet, atmospheric layer behind the welcome UI. */
+.wl{isolation:isolate;}
+.wl::before{position:absolute;z-index:0;inset:0;background:url('./assets/merqo-welcome-reference.png') center 48% / cover no-repeat;content:"";opacity:.24;filter:blur(15px) saturate(.62) brightness(.48);transform:scale(1.04);pointer-events:none;}
+.wl::after{position:absolute;z-index:0;inset:0;background:url('./assets/merqo-welcome-reference.png') center 48% / contain no-repeat;content:"";opacity:.18;filter:saturate(.72) brightness(.68);mix-blend-mode:screen;pointer-events:none;}
+.wl-head,.wl-hero,.wl-trust{position:relative;z-index:1;}
+@media (max-width:699px){
+  .wl::before{background-position:48% center;filter:blur(12px) saturate(.55) brightness(.43);}
+  .wl::after{background-position:center 46%;opacity:.2;}
+}
+@media (min-width:900px){
+  .wl::before{background-position:58% 48%;}
+  .wl::after{background-position:54% 48%;opacity:.16;}
+}
