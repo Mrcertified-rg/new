@@ -53,6 +53,7 @@ function PhonePreview() {
 export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, onWorkspace, onBrowseAsBuyer, onSwitchMode }) {
   const { user, promptAuth, signOut } = useAuth();
   const [accountChoiceOpen, setAccountChoiceOpen] = useState(false);
+  const [bgOk, setBgOk] = useState(true); // false if the photo files are missing
 
   useEffect(() => {
     if (!accountChoiceOpen) return undefined;
@@ -111,7 +112,16 @@ export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, o
   }
 
   return (
-    <main className="wl">
+    <main className={'wl' + (bgOk ? ' has-bg' : '')}>
+      {bgOk && (
+        <div className="wl-cover" aria-hidden="true">
+          <picture>
+            <source media="(min-aspect-ratio: 5/4)" srcSet="/images/welcome-bg-wide.jpg" />
+            <img className="wl-cover-img" src="/images/welcome-bg.jpg" alt="" decoding="async" onError={() => setBgOk(false)} />
+          </picture>
+        </div>
+      )}
+      <div className="wl-scroll">
       <header className="wl-head">
         <div className="wl-brand">
           <LogoMark />
@@ -130,7 +140,7 @@ export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, o
           </div>
           <button type="button" className="wl-link" onClick={() => setAccountChoiceOpen(true)}>New here? Create an account</button>
         </div>
-        <PhonePreview />
+        {!bgOk && <PhonePreview />}
       </section>
       <ul className="wl-trust">
         <li><ShieldIcon size={21} /><span>Verified<br />sellers</span></li>
@@ -138,6 +148,7 @@ export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, o
         <li><PinIcon size={21} /><span>Local<br />sellers</span></li>
         <li><StarIcon size={21} /><span>A growing<br />community</span></li>
       </ul>
+      </div>
       {accountChoiceOpen && (
         <div className="modal-wrap auth-wrap" onClick={(event) => { if (event.target === event.currentTarget) setAccountChoiceOpen(false); }}>
           <section className="modal auth-sheet" role="dialog" aria-modal="true" aria-labelledby="account-choice-title">
