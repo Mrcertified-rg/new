@@ -7,7 +7,7 @@
  * and enforce every rule on the server. Password data is never returned here.
  * ---------------------------------------------------------------------------
  */
-import { PRODUCTS, ORDER_STAGES } from '../data.js';
+import { PRODUCTS, ORDER_STAGES } from '../../../data.js';
 import { adminEmail } from './adminAuth.js';
 
 // Must match the keys used by auth/authService.js and shared/orderStore.js
