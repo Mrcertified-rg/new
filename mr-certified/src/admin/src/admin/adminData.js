@@ -3,7 +3,7 @@
  * admin/adminData.js
  * ---------------------------------------------------------------------------
  * Everything the console reads/writes. DEMO: reads the same browser storage the
- * public app uses (same origin, so run it from localhost:5173/admin.html).
+ * public app uses (same origin, so run the main Vite server at /admin.html).
  * BACKEND LATER: keep these function names, replace the bodies with API calls
  * and enforce every rule on the server. Password data is never returned here.
  * ---------------------------------------------------------------------------
