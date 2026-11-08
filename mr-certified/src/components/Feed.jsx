@@ -1,5 +1,5 @@
 // MC
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import ThemeToggle from './ui/ThemeToggle.jsx';
@@ -259,7 +259,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   ].filter(Boolean);
 
   return (
-    <React.Fragment>
+    <div className="buyer-home-page">
       <div className="mc-masthead">
         <div className="mc-wordmark">MERQO<span>.</span></div>
         <div className="mc-masthead-right">
@@ -549,6 +549,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           </article>
         ))}
       </div>
-    </React.Fragment>
+    </div>
   );
 }

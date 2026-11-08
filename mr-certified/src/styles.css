@@ -948,6 +948,21 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .buyer-signout{align-self:center;padding:6px 12px;color:#a3a6a9;font-size:9px;}
 .buyer-connection:focus-visible,.buyer-section-head>button:focus-visible,.buyer-follow-empty>button:focus-visible,.buyer-shop-glyph:focus-visible,.buyer-shop-name:focus-visible,.buyer-unfollow:focus-visible,.buyer-private summary:focus-visible,.buyer-signout:focus-visible,.buyer-edit-address:focus-visible,.buyer-address-actions button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 @media (max-width:360px){.buyer-profile-screen{padding-right:11px;padding-left:11px;}.buyer-connections{gap:6px;}.buyer-connection{gap:5px;padding:8px 6px;}.buyer-connection-icon{width:27px;height:27px;}}
+
+/* Buyer home only: soft color washes and a faint geometric texture behind the marketplace. */
+.buyer-home-page{position:relative;isolation:isolate;display:flex;min-width:0;min-height:0;flex:1;flex-direction:column;overflow:hidden;background:var(--bg);}
+.buyer-home-page::before{position:absolute;z-index:0;inset:0;content:"";pointer-events:none;background:
+  radial-gradient(ellipse at 8% 13%,rgba(45,158,125,.19),transparent 34%),
+  radial-gradient(ellipse at 95% 28%,rgba(195,139,38,.15),transparent 31%),
+  radial-gradient(ellipse at 58% 105%,rgba(87,80,148,.13),transparent 38%),
+  radial-gradient(circle,rgba(255,255,255,.045) .8px,transparent 1px) 0 0 / 22px 22px;}
+.buyer-home-page>*{position:relative;z-index:1;}
+.buyer-home-page .market-edits{background:transparent;}
+:root[data-theme="light"] .buyer-home-page::before{background:
+  radial-gradient(ellipse at 8% 13%,rgba(61,157,125,.13),transparent 34%),
+  radial-gradient(ellipse at 95% 28%,rgba(198,150,56,.12),transparent 31%),
+  radial-gradient(ellipse at 58% 105%,rgba(108,101,171,.08),transparent 38%),
+  radial-gradient(circle,rgba(35,39,46,.055) .8px,transparent 1px) 0 0 / 22px 22px;}
 @media (prefers-reduced-motion:reduce){.buyer-glyph,.buyer-connection{scroll-behavior:auto;}}
 
 /* collapsible intro / standout / mood block: slides away while scrolling down, returns on scroll up */
