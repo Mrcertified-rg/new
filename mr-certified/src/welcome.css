@@ -139,8 +139,8 @@
 .wl.has-bg .wl-copy>:nth-child(3){animation-delay:.44s}
 .wl.has-bg .wl-copy>:nth-child(4){animation-delay:.56s}
 .wl.has-bg .wl-copy>:nth-child(5){animation-delay:.68s}
-.wl.has-bg .wl-copy h1 span{font-size:clamp(20px,5.8vw,32px);}
-.wl.has-bg .wl-copy h1 em{font-size:clamp(42px,14vw,68px);}
+.wl.has-bg .wl-copy h1 span{font-size:clamp(22px,6.2vw,35px);}
+.wl.has-bg .wl-copy h1 em{font-size:clamp(46px,15vw,74px);}
 .wl.has-bg .wl-tag{font-size:clamp(17px,4.6vw,24px);}
 
 /* phones */
@@ -169,8 +169,8 @@
   .wl.has-bg .wl-copy{align-items:flex-start;max-width:min(540px,44vw);padding:34px 38px 30px;}
   .wl.has-bg .wl-cta{justify-content:flex-start;}
   .wl.has-bg .wl-trust{margin-left:0;max-width:min(720px,60vw);}
-  .wl.has-bg .wl-copy h1 span{font-size:clamp(24px,3.2vw,43px);}
-  .wl.has-bg .wl-copy h1 em{font-size:clamp(44px,min(6.5vw,11vh),86px);}
+  .wl.has-bg .wl-copy h1 span{font-size:clamp(26px,3.5vw,47px);}
+  .wl.has-bg .wl-copy h1 em{font-size:clamp(48px,min(7vw,12vh),94px);}
   .wl.has-bg .wl-tag{font-size:clamp(18px,2vw,27px);}
 }
 /* squarer windows (iPad landscape etc.): slimmer card so the woman stays visible */
@@ -183,7 +183,7 @@
 @media (max-height:520px) and (min-aspect-ratio:5/4){
   .wl.has-bg .wl-sub,.wl.has-bg .wl-trust{display:none;}
   .wl.has-bg .wl-copy{padding:16px 20px;}
-  .wl.has-bg .wl-copy h1 em{font-size:clamp(38px,10vh,52px);}
+  .wl.has-bg .wl-copy h1 em{font-size:clamp(42px,11vh,58px);}
   .wl.has-bg .wl-cta{flex-wrap:nowrap;gap:8px;margin-top:12px;}
   .wl.has-bg .wl-btn{min-height:44px;padding:0 14px;font-size:14px;}
 }
