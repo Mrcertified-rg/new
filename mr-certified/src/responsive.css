@@ -1,0 +1,93 @@
+/* =========================================================================
+   MERQO responsive + phone fixes. Loaded AFTER styles.css so it overrides it.
+   ========================================================================= */
+
+/* ---------- 1. Fill the whole browser window (phone, tablet, desktop) ---------- */
+:root{
+  padding-top:0; padding-bottom:0;            /* removes the double safe-area padding bug */
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
+}
+html,body{width:100%;height:100%;overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
+#stage,#root{
+  max-width:none; width:100%;
+  height:100vh; height:100dvh;                /* dvh = follows the phone's address bar */
+  padding-left:env(safe-area-inset-left,0px); /* landscape notch */
+  padding-right:env(safe-area-inset-right,0px);
+}
+html.has-vv #root{height:var(--app-h);}       /* set by main.jsx, also shrinks for the keyboard */
+img,video,canvas,svg{max-width:100%;}
+
+/* ---------- 2. Android + iOS touch behaviour ---------- */
+button,a,[role="button"],input,select,textarea,label,.icon-btn{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;                  /* no double-tap zoom / 300ms delay */
+}
+button{-webkit-appearance:none;appearance:none;}
+input[type="text"],input[type="email"],input[type="tel"],input[type="password"],
+input[type="search"],input[type="number"],textarea{-webkit-appearance:none;appearance:none;}
+.screen,.reels-screen,.mq-chat-messages,.modal{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}
+
+/* iOS Safari zooms the page when you tap an input smaller than 16px. Stop that (iOS only). */
+@supports (-webkit-touch-callout:none){
+  input,select,textarea{font-size:16px !important;}
+}
+
+/* Visible keyboard focus for desktop users */
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--gold);outline-offset:2px;
+}
+
+/* ---------- 3. Tablet + desktop (768px and wider) ---------- */
+@media (min-width:768px){
+  :root{ --g:max(16px, calc((100% - 1100px) / 2)); }   /* side gutter that centres content at 1100px */
+
+  /* top bars: full width, a bit more breathing room */
+  .topbar,.appbar{padding-left:24px;padding-right:24px;}
+
+  /* every normal scrolling page becomes a centred 760px column */
+  .screen{padding-left:max(0px,calc((100% - 760px)/2));padding-right:max(0px,calc((100% - 760px)/2));}
+  .screen.pad{padding-left:max(18px,calc((100% - 760px)/2));padding-right:max(18px,calc((100% - 760px)/2));}
+  .pd-media{height:360px;border-radius:20px;}
+
+  /* seller pages: wider, 1000px */
+  .screen.seller-dashboard,.screen.seller-page{
+    padding-left:max(18px,calc((100% - 1000px)/2));
+    padding-right:max(18px,calc((100% - 1000px)/2));
+  }
+
+  /* buyer home feed: header lines up with a multi-column product grid */
+  .mc-bar,.mc-masthead,.mc-intro,.market-edits{padding-left:var(--g);padding-right:var(--g);}
+  .market-spotlight,.mc-panel{margin-left:var(--g);margin-right:var(--g);}
+  .mc-bar .search-suggestions{left:var(--g);right:var(--g);}
+  .screen.market-feed{
+    padding-left:var(--g);padding-right:var(--g);
+    grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+    gap:16px;
+  }
+
+  /* reels stay a phone-shaped column in the middle (like TikTok web) */
+  .reels-screen{width:100%;max-width:520px;margin-left:auto;margin-right:auto;
+    border-left:1px solid var(--line);border-right:1px solid var(--line);}
+
+  /* chats: centred, readable width */
+  .mq-chat-screen{width:100%;max-width:880px;margin-left:auto;margin-right:auto;
+    border-left:1px solid var(--chat-line);border-right:1px solid var(--chat-line);}
+
+  /* bottom navigation: keep the icons together in the middle */
+  .buyer-nav,.seller-nav{
+    padding-left:max(8px,calc((100% - 600px)/2));
+    padding-right:max(8px,calc((100% - 600px)/2));
+  }
+
+  /* bottom sheets become centred dialogs */
+  .modal-wrap{align-items:center;justify-content:center;padding:24px;}
+  .modal{width:100%;max-width:520px;max-height:88%;border-radius:22px;padding-bottom:22px;}
+  .cm-sheet{height:min(70%,640px);}
+  .toast{bottom:32px;}
+}
+
+/* ---------- 4. Phones in landscape (short + wide) ---------- */
+@media (max-height:480px) and (orientation:landscape){
+  .pd-media{height:200px;}
+  .modal{max-height:94%;}
+}
