@@ -1,3 +1,4 @@
+// MC
 import React from 'react';
 import { HomeIcon, PackageIcon, ReceiptIcon, UserIcon, StoreIcon } from '../ui/Icons.jsx';
 

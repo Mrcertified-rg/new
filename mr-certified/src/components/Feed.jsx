@@ -1,3 +1,4 @@
+// MC
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';

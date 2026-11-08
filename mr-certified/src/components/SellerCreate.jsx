@@ -1,3 +1,4 @@
+// MC
 import React, { useState } from 'react';
 import { normalizePhone, validateSellerDocuments } from '../auth/validators.js';
 import SellerDocumentFields from './auth/SellerDocumentFields.jsx';

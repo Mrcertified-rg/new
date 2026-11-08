@@ -1,3 +1,4 @@
+// MC
 import React, { useState } from 'react';
 import { PRODUCTS } from '../data.js';
 import { useAuth } from '../auth/AuthContext.jsx';

@@ -1,3 +1,4 @@
+// MC
 /**
  * shared/orderStore.js
  * Public app -> admin console bridge (DEMO ONLY, same browser).

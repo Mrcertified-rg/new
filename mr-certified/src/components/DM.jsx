@@ -1,3 +1,4 @@
+// MC
 import React, { useEffect, useRef, useState } from 'react';
 import { PRODUCTS } from '../data.js';
 import ProductPreview from './ProductPreview.jsx';

@@ -1,3 +1,4 @@
+// MC
 /**
  * auth/config.js
  * Central settings and constants for the account system.

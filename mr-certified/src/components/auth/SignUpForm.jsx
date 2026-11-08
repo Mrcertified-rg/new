@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/SignUpForm.jsx
  * Account signup with optional delivery details and role workspace setup.

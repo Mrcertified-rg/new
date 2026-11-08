@@ -1,3 +1,4 @@
+// MC
 import React from 'react';
 import { THEMES } from '../data.js';
 import ThemeSwitch from './ui/ThemeSwitch.jsx';

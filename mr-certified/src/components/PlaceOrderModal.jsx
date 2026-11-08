@@ -1,3 +1,4 @@
+// MC
 import React, { useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import BuyModal from './BuyModal.jsx';

@@ -1,3 +1,4 @@
+// MC
 export const PRODUCTS =[
  {id:1,seller:'Urban Kicks Kenya',rating:4.8,orders:127,delivery:96,repeat:42,city:'Nairobi',name:'Nike Air Force 1',colors:['White'],price:3500,cat:'Shoes',g:['#3a4a3f','#1c241f'],sizes:[39,40,41,42,43],profit:14200,desc:'Classic white low-top, true to size, comes with box.'},
  {id:2,seller:'Urban Kicks Kenya',rating:4.8,orders:127,delivery:96,repeat:42,city:'Nairobi',name:'Adidas Superstar',colors:['White','Black'],price:4200,cat:'Shoes',g:['#2d3550','#171b2b'],sizes:[38,39,40,41,42],profit:9800,desc:'Shell-toe icon, black stripes, unisex fit.'},

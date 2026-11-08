@@ -1,3 +1,4 @@
+// MC
 import React from 'react';
 
 /* Small inline icon set (no extra dependency). All icons inherit currentColor. */

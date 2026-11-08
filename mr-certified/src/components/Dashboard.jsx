@@ -1,3 +1,4 @@
+// MC
 import React from 'react';
 import { DASH, PRODUCTS, money, ORDER_STAGES } from '../data.js';
 

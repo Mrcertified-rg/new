@@ -1,3 +1,4 @@
+// MC
 const THEME_KEY = 'merqo-theme';
 
 export function getThemePreference() {

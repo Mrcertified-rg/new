@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/RoleAccessSheet.jsx
  * The "log in again" popup shown every time someone switches into Seller mode.

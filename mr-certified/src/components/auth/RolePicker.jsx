@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/RolePicker.jsx
  * Role setup step: choose a seller workspace on the shared login.

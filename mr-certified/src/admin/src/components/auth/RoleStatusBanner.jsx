@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/RoleStatusBanner.jsx
  * Shown at the top of Seller screens until the role is APPROVED.

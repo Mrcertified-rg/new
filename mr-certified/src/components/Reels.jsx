@@ -1,3 +1,4 @@
+// MC
 import React, { useEffect, useRef, useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import { BagIcon, MessageIcon, StarIcon } from './ui/Icons.jsx';

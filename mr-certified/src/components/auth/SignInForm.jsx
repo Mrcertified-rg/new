@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/SignInForm.jsx
  * Email-or-phone + password sign-in for returning buyers.

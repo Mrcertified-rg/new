@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/RoleBusinessFields.jsx
  * The verification details a seller needs (business name, National ID, KRA PIN, phone).

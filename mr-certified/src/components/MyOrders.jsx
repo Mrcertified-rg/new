@@ -1,3 +1,4 @@
+// MC
 import React from 'react';
 import { PRODUCTS, ORDER_STAGES, money } from '../data.js';
 import { ArrowLeftIcon } from './ui/Icons.jsx';

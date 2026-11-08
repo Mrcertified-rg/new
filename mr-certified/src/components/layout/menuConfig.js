@@ -1,3 +1,4 @@
+// MC
 /**
  * components/layout/menuConfig.js
  * What each mode shows in the account menu. To add a page to a menu, add one

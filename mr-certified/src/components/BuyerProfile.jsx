@@ -1,3 +1,4 @@
+// MC
 import React, { useEffect, useRef, useState } from 'react';
 import { initials } from '../data.js';
 import { PRODUCTS } from '../data.js';

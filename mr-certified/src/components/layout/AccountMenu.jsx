@@ -1,3 +1,4 @@
+// MC
 /**
  * components/layout/AccountMenu.jsx
  * The person icon dropdown used on every screen (feed + AppBar).

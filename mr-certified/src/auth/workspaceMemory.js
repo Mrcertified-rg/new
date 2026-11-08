@@ -1,3 +1,4 @@
+// MC
 const UNLOCKED_KEY = 'merqo.unlocked-workspace';
 const PLACE_KEY = 'merqo.workspace-place';
 

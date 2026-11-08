@@ -1,3 +1,4 @@
+// MC
 import React, { useMemo, useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
 

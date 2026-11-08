@@ -1,3 +1,4 @@
+// MC
 /**
  * components/layout/AppBar.jsx
  * Slim top bar that replaces the old bottom tab bar on every inner screen:

@@ -1,3 +1,4 @@
+// MC
 import React from 'react';
 import { HomeIcon, VideoIcon, MessageIcon, CartIcon, UserIcon } from '../ui/Icons.jsx';
 import { useAuth } from '../../auth/AuthContext.jsx';

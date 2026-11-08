@@ -1,3 +1,4 @@
+// MC
 /**
  * components/auth/AuthSheet.jsx
  * The sign-in / create-account popup. Visitors can browse freely; this opens
