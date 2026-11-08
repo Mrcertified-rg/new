@@ -5,11 +5,11 @@
  *
  *   user          the shared signed-in identity (null = visitor browsing as a guest)
  *   elevatedRole  'seller' | null - which privileged mode is
- *                 currently UNLOCKED. Kept in memory only, so a page refresh,
- *                 switching modes, or 15 idle minutes locks it again.
+ *                 currently UNLOCKED. The demo remembers it for this account
+ *                 across refreshes until the user explicitly locks or signs out.
  *
  * Shared account: signed in once, remembered for 30 days (see authService).
- * Seller: must log in again every time they enter that mode.
+ * Seller: must log in to unlock; the demo remembers that unlock until locked.
  * ---------------------------------------------------------------------------
  */
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -18,7 +18,7 @@ import {
   verifyRolePassword, applyForRole, setRoleStatusDemo, updateBuyerProfile,
 } from './authService.js';
 import { applyThemePreference, getThemePreference } from '../themePreference.js';
-import { ROLE_IDLE_MINUTES } from './config.js';
+import { rememberUnlocked, forgetUnlocked, forgetPlace, recallUnlocked } from './workspaceMemory.js';
 import AuthSheet from '../components/auth/AuthSheet.jsx';
 import RoleAccessSheet from '../components/auth/RoleAccessSheet.jsx';
 
@@ -33,7 +33,7 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   // Restore the remembered account synchronously so there is no login flash.
   const [user, setUser] = useState(() => restoreSession());
-  const [elevatedRole, setElevatedRole] = useState(null);
+  const [elevatedRole, setElevatedRole] = useState(() => recallUnlocked(user));
 
   // Sign-in / sign-up popup
   const [sheet, setSheet] = useState({ open: false, view: 'signin', reason: '', initialIdentifier: '', notice: '' });
@@ -77,7 +77,10 @@ export function AuthProvider({ children }) {
 
   const finishAuth = (nextUser, roleIntent = null) => {
     setUser(nextUser);
-    if (roleIntent) setElevatedRole(roleIntent);
+    if (roleIntent) {
+      rememberUnlocked(roleIntent, nextUser);
+      setElevatedRole(roleIntent);
+    }
     setSheet((s) => ({ ...s, open: false, initialIdentifier: '', notice: '' }));
     const pending = afterAuthRef.current;
     afterAuthRef.current = null;
@@ -104,6 +107,8 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     await signOutUser();
+    forgetUnlocked();
+    forgetPlace();
     setElevatedRole(null);
     setUser(null);
   };
@@ -131,6 +136,7 @@ export function AuthProvider({ children }) {
 
   const finishRole = (role, nextUser) => {
     setUser(nextUser);
+    rememberUnlocked(role, nextUser);
     setElevatedRole(role); // unlock ONLY this role (the other one stays locked)
     setRoleSheet((s) => ({ ...s, open: false }));
     const done = afterRoleRef.current;
@@ -141,27 +147,13 @@ export function AuthProvider({ children }) {
   const unlockRole = async (role, password) => finishRole(role, await verifyRolePassword(user.id, role, password));
   const applyRole = async (role, accountPassword) =>
     finishRole(role, await applyForRole(user.id, role, accountPassword));
-  const lockRole = useCallback(() => setElevatedRole(null), []);
+  const lockRole = useCallback(() => {
+    forgetUnlocked();
+    setElevatedRole(null);
+  }, []);
 
   /** DEMO ONLY - see authService.setRoleStatusDemo. */
   const simulateApproval = async (role) => setUser(await setRoleStatusDemo(user.id, role, 'approved'));
-
-  // Auto-lock a privileged mode after ROLE_IDLE_MINUTES without taps/keys.
-  useEffect(() => {
-    if (!elevatedRole) return undefined;
-    let last = Date.now();
-    const bump = () => { last = Date.now(); };
-    window.addEventListener('pointerdown', bump);
-    window.addEventListener('keydown', bump);
-    const timer = setInterval(() => {
-      if (Date.now() - last > ROLE_IDLE_MINUTES * 60000) setElevatedRole(null);
-    }, 15000);
-    return () => {
-      window.removeEventListener('pointerdown', bump);
-      window.removeEventListener('keydown', bump);
-      clearInterval(timer);
-    };
-  }, [elevatedRole]);
 
   const value = {
     user, elevatedRole, saveBuyerProfile,

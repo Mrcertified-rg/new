@@ -1,8 +1,10 @@
 import React from 'react';
 import { THEMES } from '../data.js';
 import ThemeSwitch from './ui/ThemeSwitch.jsx';
+import { useAuth } from '../auth/AuthContext.jsx';
 
 export default function SellerSettings({setMode,sellerAccount,go,storeTheme,setStoreTheme}){
+ const {user}=useAuth();
  return (
   <React.Fragment>
    <div className="topbar"><h1>Profile</h1></div>
@@ -33,7 +35,7 @@ export default function SellerSettings({setMode,sellerAccount,go,storeTheme,setS
      <ThemeSwitch />
     </div>
     <div className="card row" onClick={()=>go('records')}><span>Business records & balance sheet</span><span className="pill">Manage ›</span></div>
-    <button className="btn ghost" style={{width:'100%'}} onClick={()=>setMode('buyer')}>🛍️ Switch to buyer mode</button>
+    {user?.roles?.buyer && <button className="btn ghost" style={{width:'100%'}} onClick={()=>setMode('buyer')}>🛍️ Switch to buyer mode</button>}
    </div>
   </React.Fragment>
  );

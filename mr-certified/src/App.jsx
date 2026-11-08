@@ -32,6 +32,7 @@ import RoleStatusBanner from './components/auth/RoleStatusBanner.jsx';
 import { ArrowLeftIcon } from './components/ui/Icons.jsx';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
 import { getBusinessProfile, getPerson, restoreSession, saveBusinessProfile } from './auth/authService.js';
+import { recallPlace, rememberPlace } from './auth/workspaceMemory.js';
 import { ROLE_LABEL } from './auth/config.js';
 import { listFollowedSellers, toggleFollowedSeller } from './social/socialService.js';
 
@@ -59,8 +60,26 @@ const ACCOUNT_SCREENS = {
 function AppInner() {
   const { user, elevatedRole, promptAuth, requireAuth, openRoleAccess, lockRole, simulateApproval } = useAuth();
 
-  const [mode, setModeRaw] = useState('buyer');
-  const [screen, setScreen] = useState(() => (user?.roles?.buyer ? 'feed' : 'welcome'));
+  const [start] = useState(() => {
+    const saved = recallPlace(user?.id);
+    if (
+      user
+      && elevatedRole === 'seller'
+      && saved?.workspace === 'seller'
+      && getBusinessProfile(user.id, 'seller')
+    ) {
+      return {
+        mode: 'seller',
+        screen: SELLER_SCREENS.includes(saved.sellerScreen) ? saved.sellerScreen : HOME.seller,
+      };
+    }
+    if (user?.roles?.buyer && (saved?.workspace === 'buyer' || !user.roles.seller)) {
+      return { mode: 'buyer', screen: HOME.buyer };
+    }
+    return { mode: 'buyer', screen: 'welcome' };
+  });
+  const [mode, setModeRaw] = useState(start.mode);
+  const [screen, setScreen] = useState(start.screen);
   const [hist, setHist] = useState([]); // back-button history
   const [pid, setPid] = useState(null);
   const [tab, setTab] = useState('Products');
@@ -185,6 +204,11 @@ function AppInner() {
       setFollowing(listFollowedSellers(user.id));
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || screen === 'welcome') return;
+    rememberPlace(mode, screen, SELLER_SCREENS.includes(screen), user.id);
+  }, [user?.id, mode, screen]);
 
   // MC - open product links shared from the feed
   useEffect(() => {

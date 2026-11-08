@@ -1,7 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { BagIcon, CloseIcon, PackageIcon, ShieldIcon, StarIcon, StoreIcon } from './ui/Icons.jsx';
+import {
+  ArrowRightIcon, BagIcon, CartIcon, CloseIcon, LockIcon, PinIcon, SearchIcon,
+  ShieldIcon, StarIcon, StoreIcon,
+} from './ui/Icons.jsx';
+import { PRODUCTS, money } from '../data.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { STATUS_LABEL } from '../auth/config.js';
+import '../welcome.css';
+
+function LogoMark() {
+  return (
+    <svg className="wl-logo" viewBox="0 0 48 52" aria-hidden="true">
+      <path d="M15 17V13a9 9 0 0 1 18 0v4" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M6 17h36l-2.6 28a4 4 0 0 1-4 3.6H12.6a4 4 0 0 1-4-3.6L6 17Z" fill="currentColor" />
+      <path d="M16 41V27l8 9 8-9v14" fill="none" stroke="#0b0b0c" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PhonePreview() {
+  const items = PRODUCTS.slice(0, 3);
+  return (
+    <div className="wl-phone" aria-hidden="true">
+      <div className="wl-screen">
+        <span className="wl-notch" />
+        <div className="wl-app-logo">MERQO<i>.</i></div>
+        <div className="wl-search"><SearchIcon size={13} /> Search products…</div>
+        <div className="wl-promo"><small>Today’s picks</small><b>Big Deals,<br />Bigger Smiles</b><span>Shop now →</span></div>
+        <div className="wl-trend-title">Trending now</div>
+        <div className="wl-tiles">
+          {items.map((product) => (
+            <div key={product.id}>
+              <i style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }} />
+              <span>{product.name}</span>
+              <b>{money(product.price)}</b>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, onWorkspace, onBrowseAsBuyer, onSwitchMode }) {
   const { user, promptAuth, signOut } = useAuth();
@@ -64,35 +103,33 @@ export default function WelcomePage({ onBrowse, onBuyerSignUp, onSellerSignUp, o
   }
 
   return (
-    <main className="entry-screen entry-screen-inspo">
-      <section className="entry-welcome">
-        <div className="entry-welcome-brand">
-          <div className="entry-crest" aria-hidden="true">
-            <svg viewBox="0 0 64 64"><path d="M12 25 8 10l14 9L32 5l10 14 14-9-4 15H12Z" /><path d="M13 29h38l-4 27H17l-4-27Z" /><path d="M23 37v11m18-11v11M24 37l8-6 8 6M28 37v11m8-11v11" /></svg>
+    <main className="wl">
+      <header className="wl-head">
+        <div className="wl-brand">
+          <LogoMark />
+          <div><b>MERQO<i>.</i></b><span>Shop · Sell · Grow</span></div>
+        </div>
+        <button type="button" className="wl-login" onClick={() => promptAuth('sign in', onWorkspace, 'signin')}>Log in</button>
+      </header>
+      <section className="wl-hero">
+        <div className="wl-copy">
+          <h1><span>Welcome to</span><em>MERQO</em></h1>
+          <p className="wl-tag">Shop smarter. Sell <b>easier.</b> <b>Grow</b> together.</p>
+          <p className="wl-sub">Discover amazing products, support local sellers, and experience secure, seamless shopping.</p>
+          <div className="wl-cta">
+            <button type="button" className="wl-btn gold" onClick={onBrowse}><CartIcon size={19} /> Start Shopping <ArrowRightIcon size={18} /></button>
+            <button type="button" className="wl-btn" onClick={() => promptAuth('', onSellerSignUp, 'signup', 'seller')}><StoreIcon size={19} /> Become a Seller</button>
           </div>
-          <div className="entry-welcome-wordmark">MERQO<span>.</span></div>
-          <span className="entry-welcome-subbrand">CERTIFIED MARKETPLACE</span>
+          <button type="button" className="wl-link" onClick={() => setAccountChoiceOpen(true)}>New here? Create an account</button>
         </div>
-        <div className="entry-welcome-copy">
-          <span className="entry-kicker">SHOP · SELL · GROW</span>
-          <h1>Your next great<br />move starts <em>here.</em></h1>
-          <p>Discover standout finds. Build your business. Make room for what’s next—with one login for your separate spaces.</p>
-        </div>
-        <div className="entry-benefits" aria-label="Marketplace highlights">
-          <div><span><ShieldIcon size={18} /></span><b>Seller<br />discovery</b></div>
-          <div><span><PackageIcon size={18} /></span><b>Fresh<br />finds</b></div>
-          <div><span><StoreIcon size={18} /></span><b>Store<br />tools</b></div>
-          <div><span><StarIcon size={18} /></span><b>Room to<br />grow</b></div>
-        </div>
-        <div className="entry-welcome-actions">
-          <button type="button" className="entry-get-started" onClick={() => setAccountChoiceOpen(true)}>
-            Get started <span>→</span>
-          </button>
-          <p className="entry-login-prompt">Already have an account? <button type="button" onClick={() => promptAuth('sign in', onWorkspace, 'signin')}>Log in</button></p>
-        </div>
-        <button type="button" className="entry-guest-link" onClick={onBrowse}>Explore as a guest</button>
-        <div className="entry-welcome-bottom"><span>MADE FOR LOCAL AMBITION</span><i /> <span>ONE LOGIN · SEPARATE SPACES</span></div>
+        <PhonePreview />
       </section>
+      <ul className="wl-trust">
+        <li><ShieldIcon size={21} /><span>Verified<br />sellers</span></li>
+        <li><LockIcon size={21} /><span>Secure<br />payments</span></li>
+        <li><PinIcon size={21} /><span>Local<br />sellers</span></li>
+        <li><StarIcon size={21} /><span>A growing<br />community</span></li>
+      </ul>
       {accountChoiceOpen && (
         <div className="modal-wrap auth-wrap" onClick={(event) => { if (event.target === event.currentTarget) setAccountChoiceOpen(false); }}>
           <section className="modal auth-sheet" role="dialog" aria-modal="true" aria-labelledby="account-choice-title">
