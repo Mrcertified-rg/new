@@ -150,7 +150,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const [sort, setSort] = useState('featured');
   const [showSug, setShowSug] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
   const [promoPaused, setPromoPaused] = useState(false);
   const promoTouchStart = useRef(null);
@@ -333,6 +332,24 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
         )}
       </div>
 
+      <section className="market-edits" aria-label="Product categories">
+        <div className="market-category-bar">
+          <div className="market-edit-list" role="group" aria-label="Scroll to browse product categories" tabIndex={0}>
+            {CATEGORY_TABS.map(category => (
+              <button
+                type="button"
+                key={category.value}
+                className={'market-edit' + (category.value === catFilter ? ' on' : '')}
+                onClick={() => setCatFilter(category.value)}
+                aria-pressed={category.value === catFilter}
+              >
+                <b>{category.label}</b>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ---------- filters panel (opens in place, pushes mc content down) ---------- */}
       {panelOpen && (
         <div className="mc-panel" role="region" aria-label="Filters">
@@ -435,52 +452,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
 
       </div>
       </div>
-
-      {/* Keep category shortcuts outside the scrolling product feed. */}
-      <section className="market-edits" aria-label="Product categories">
-        <div className="market-category-bar">
-          <div className="market-edit-list">
-            {CATEGORY_TABS.slice(0, 6).map(category => (
-              <button
-                type="button"
-                key={category.value}
-                className={'market-edit' + (category.value === catFilter ? ' on' : '')}
-                onClick={() => { setCatFilter(category.value); setCategoriesOpen(false); }}
-                aria-pressed={category.value === catFilter}
-              >
-                <b>{category.label}</b>
-              </button>
-            ))}
-          </div>
-          {CATEGORY_TABS.length > 6 && (
-            <button
-              type="button"
-              className={'market-category-toggle' + (categoriesOpen ? ' on' : '')}
-              onClick={() => setCategoriesOpen((open) => !open)}
-              aria-expanded={categoriesOpen}
-              aria-label={categoriesOpen ? 'Hide more categories' : 'Show more categories'}
-              title={categoriesOpen ? 'Hide more categories' : 'Show more categories'}
-            >
-              <ChevronDownIcon size={17} />
-            </button>
-          )}
-        </div>
-        {categoriesOpen && (
-          <div className="market-category-menu" aria-label="More product categories">
-            {CATEGORY_TABS.slice(6).map(category => (
-              <button
-                type="button"
-                key={category.value}
-                className={'market-category-option' + (category.value === catFilter ? ' on' : '')}
-                onClick={() => { setCatFilter(category.value); setCategoriesOpen(false); }}
-                aria-pressed={category.value === catFilter}
-              >
-                <b>{category.label}</b>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* ---------- feed ---------- */}
       <div className="screen market-feed" onScroll={handleFeedScroll}>

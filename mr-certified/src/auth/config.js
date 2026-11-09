@@ -5,8 +5,8 @@
  * Change values here instead of hunting through the code.
  */
 
-/** DEMO_MODE = the account system runs fully inside the browser (no server). */
-export const DEMO_MODE = true;
+/** DEMO_MODE = false now that accounts run on Supabase (hides the fake "simulate approval" button). */
+export const DEMO_MODE = false;
 
 /** Buyers stay signed in this long (days) after signing in / registering. */
 export const SESSION_DAYS = 30;

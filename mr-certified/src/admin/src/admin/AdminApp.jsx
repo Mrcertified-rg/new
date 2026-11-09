@@ -1,6 +1,6 @@
 // MC
 import React, { useEffect, useMemo, useState } from 'react';
-import { isSetUp, setUpAdmin, signInAdmin, hasSession, touchSession, signOutAdmin, adminEmail, IDLE_MINUTES } from './adminAuth.js';
+import { restoreAdmin, signInAdmin, hasSession, touchSession, signOutAdmin, adminEmail, IDLE_MINUTES } from './adminAuth.js';
 import { listAccounts, listOrders, getStats, setSellerStatus, listAudit, logAudit, mask, money, when } from './adminData.js';
 import './admin.css';
 
@@ -33,8 +33,11 @@ const FUTURE_MODULES = [
 ];
 
 export default function AdminApp() {
-  const [authed, setAuthed] = useState(hasSession());
+  const [authed, setAuthed] = useState(false);
+  const [checking, setChecking] = useState(true); // asking Supabase if we are still signed in
   const [notice, setNotice] = useState('');
+
+  useEffect(() => { restoreAdmin().then((ok) => { setAuthed(ok); setChecking(false); }); }, []);
 
   // Lock after IDLE_MINUTES without a tap/key; closing the tab also ends the session.
   useEffect(() => {
@@ -42,18 +45,19 @@ export default function AdminApp() {
     const events = ['pointerdown', 'keydown'];
     events.forEach((e) => window.addEventListener(e, touchSession));
     const timer = setInterval(() => {
-      if (!hasSession()) { setAuthed(false); setNotice(`Locked after ${IDLE_MINUTES} idle minutes.`); }
+      if (!hasSession()) { signOutAdmin(); setAuthed(false); setNotice(`Locked after ${IDLE_MINUTES} idle minutes.`); }
     }, 10000);
     return () => { events.forEach((e) => window.removeEventListener(e, touchSession)); clearInterval(timer); };
   }, [authed]);
 
+  if (checking) return <div className="ad-gate"><p className="ad-sub">Loading…</p></div>;
   if (!authed) return <Gate notice={notice} onDone={() => { setNotice(''); setAuthed(true); }} />;
-  return <Console onLock={() => { logAudit('admin.logout'); signOutAdmin(); setAuthed(false); }} />;
+  return <Console onLock={async () => { await logAudit('admin.logout'); await signOutAdmin(); setAuthed(false); }} />;
 }
 
 /* --------------------------------- login --------------------------------- */
 function Gate({ onDone, notice }) {
-  const setup = !isSetUp();
+  const setup = false; // the administrator login is created in Supabase (see supabase/03_admin.sql)
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -66,11 +70,10 @@ function Gate({ onDone, notice }) {
     if (setup && pw !== pw2) { setErr('Passphrases do not match.'); return; }
     setBusy(true);
     try {
-      if (setup) await setUpAdmin(email, pw); else await signInAdmin(email, pw);
-      logAudit(setup ? 'admin.setup' : 'admin.login');
+      await signInAdmin(email, pw);
+      logAudit('admin.login');
       onDone();
     } catch (x) {
-      if (!setup) logAudit('admin.login_failed', email);
       setErr(x.message);
     } finally { setBusy(false); }
   };
@@ -110,8 +113,19 @@ function Console({ onLock }) {
     };
   }, []);
 
-  const accounts = useMemo(() => listAccounts(), [tick]);
-  const orders = useMemo(() => listOrders(), [tick]);
+  const [accounts, setAccounts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [audit, setAudit] = useState([]);
+  const [loadError, setLoadError] = useState('');
+
+  // Reloads from Supabase on first open, on every Refresh click, and every 5 seconds.
+  useEffect(() => {
+    let alive = true;
+    Promise.all([listAccounts(), listOrders(), listAudit()])
+      .then(([a, o, l]) => { if (alive) { setAccounts(a); setOrders(o); setAudit(l); setLoadError(''); } })
+      .catch((e) => { if (alive) setLoadError(e.message || 'Could not load data.'); });
+    return () => { alive = false; };
+  }, [tick]);
   const stats = useMemo(
     () => getStats(accounts, orders),
     [accounts, orders]
@@ -255,6 +269,8 @@ function Console({ onLock }) {
 
         <main className="ad-main">
 
+          {loadError && <p className="ad-err" role="alert">{loadError}</p>}
+
           {tab === "overview" && (
             <Overview
               stats={stats}
@@ -300,7 +316,7 @@ function Console({ onLock }) {
                 title="Audit history"
                 description="Review administrator actions and important changes."
               />
-              <Audit tick={tick} />
+              <Audit log={audit} />
             </>
           )}
 
@@ -509,13 +525,13 @@ function SellerCard({ a, onChange }) {
   const b = a.business || {};
   const toggle = () => { if (!show) logAudit('pii.reveal', `${a.email}: ID / KRA viewed`); setShow(!show); };
 
-  const act = (status, needReason) => {
+  const act = async (status, needReason) => {
     let reason = '';
     if (needReason) {
       reason = (window.prompt(`Reason for ${status} (required):`) || '').trim();
       if (!reason) return;
     } else if (!window.confirm(`Set "${b.name || a.name}" to ${status}?`)) return;
-    try { setSellerStatus(a.id, status, reason); onChange(); } catch (e) { window.alert(e.message); }
+    try { await setSellerStatus(a.id, status, reason); onChange(); } catch (e) { window.alert(e.message); }
   };
 
   return (
@@ -532,7 +548,7 @@ function SellerCard({ a, onChange }) {
         <dt>Registered</dt><dd>{when(a.createdAt)}</dd>
         {a.sellerReason && (<><dt>Last reason</dt><dd>{a.sellerReason}</dd></>)}
       </dl>
-      <p className="ad-sub">Prototype: ID photos and KRA certificate are not stored yet, so they cannot be reviewed here. Verify them with your backend document storage.</p>
+      <p className="ad-sub">ID photos and the KRA certificate are not stored yet (document upload comes in a later step), so only the typed details can be reviewed here.</p>
       <div className="ad-actions">
         <button className="ad-btn" onClick={toggle}>{show ? 'Hide' : 'Reveal'} ID / KRA</button>
         {a.seller === 'pending' && (<><button className="ad-btn gold" onClick={() => act('approved')}>Approve</button><button className="ad-btn red" onClick={() => act('rejected', true)}>Reject</button></>)}
@@ -591,8 +607,7 @@ function Orders({ orders, stats }) {
 }
 
 /* -------------------------------- audit log -------------------------------- */
-function Audit({ tick }) {
-  const log = useMemo(() => listAudit(), [tick]);
+function Audit({ log }) {
   return (
     <div className="ad-table">
       <table>

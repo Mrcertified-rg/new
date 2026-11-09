@@ -784,7 +784,8 @@ select.ai option{background:#181B1F;color:#F4F3EF;}
 .market-result-count{color:var(--sub);font-size:9px;}
 .market-category-bar{display:flex;align-items:center;gap:7px;min-width:0;}
 .market-edit-list{display:flex;gap:5px;overflow-x:auto;padding:1px 1px 0;}
-.market-category-bar .market-edit-list{min-width:0;flex:1;justify-content:space-between;gap:4px;overflow:hidden;}
+.market-category-bar .market-edit-list{min-width:0;flex:1;justify-content:flex-start;gap:6px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x;scrollbar-width:none;}
+.market-category-bar .market-edit-list::-webkit-scrollbar{display:none;}
 .market-category-bar .market-category-toggle{flex:0 0 30px;width:30px;height:30px;aspect-ratio:1;border-radius:50%;padding:0;}
 .market-edit{min-height:30px;padding:0 10px;border-radius:16px;}
 .market-edit{display:flex;flex:0 0 auto;align-items:center;border:1px solid #34383c;background:var(--panel);text-align:center;white-space:nowrap;}
