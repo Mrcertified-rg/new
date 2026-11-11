@@ -61,6 +61,8 @@ function Gate({ onDone, notice }) {
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -85,8 +87,8 @@ function Gate({ onDone, notice }) {
         {setup && <p className="ad-sub">First run: this creates the only administrator login for this console.</p>}
         {notice && <p className="ad-note">{notice}</p>}
         <label>Email<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-        <label>Passphrase<input type="password" autoComplete={setup ? 'new-password' : 'current-password'} value={pw} onChange={(e) => setPw(e.target.value)} required /></label>
-        {setup && <label>Repeat passphrase<input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} required /></label>}
+        <label>Passphrase<span className="ad-password-field"><input type={showPw ? 'text' : 'password'} autoComplete={setup ? 'new-password' : 'current-password'} value={pw} onChange={(e) => setPw(e.target.value)} required /><button type="button" className="ad-password-toggle" onClick={() => setShowPw((visible) => !visible)} aria-label={showPw ? 'Hide passphrase' : 'Show passphrase'} aria-pressed={showPw} title={showPw ? 'Hide passphrase' : 'Show passphrase'}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{showPw && <path d="m4 4 16 16"/>}</svg></button></span></label>
+        {setup && <label>Repeat passphrase<span className="ad-password-field"><input type={showPw2 ? 'text' : 'password'} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} required /><button type="button" className="ad-password-toggle" onClick={() => setShowPw2((visible) => !visible)} aria-label={showPw2 ? 'Hide repeated passphrase' : 'Show repeated passphrase'} aria-pressed={showPw2} title={showPw2 ? 'Hide passphrase' : 'Show passphrase'}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{showPw2 && <path d="m4 4 16 16"/>}</svg></button></span></label>}
         {err && <p className="ad-err" role="alert">{err}</p>}
         <button className="ad-btn gold" disabled={busy}>{busy ? 'Please wait…' : setup ? 'Create & enter' : 'Sign in'}</button>
       </form>

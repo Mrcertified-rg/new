@@ -88,6 +88,43 @@ input:focus-visible {
   border-radius: 9px;
 }
 
+.ad-password-field {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+}
+
+.ad-password-field input {
+  min-width: 0;
+  flex: 1;
+}
+
+.ad-password-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  flex: 0 0 36px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--gold);
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.ad-password-toggle:hover {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.ad-password-toggle:active {
+  transform: scale(.96);
+}
+
+.ad-password-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
 .ad-card {
   background: var(--panel);
   border: 1px solid var(--line);
