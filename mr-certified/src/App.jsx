@@ -16,7 +16,7 @@ import SellerSettings from './components/SellerSettings.jsx';
 import SellerCreate from './components/SellerCreate.jsx';
 import Records from './components/Records.jsx';
 import BuyModal from './components/BuyModal.jsx';
-import CreateModal from './components/CreateModal.jsx';
+import AddProduct from './components/AddProduct.jsx';
 import CommentsModal from './components/CommentsModal.jsx';
 import Friends from './components/Friends.jsx';
 import Chat from './components/Chat.jsx';
@@ -322,6 +322,10 @@ function AppInner() {
     setModal(type);
   };
   const closeModal = () => setModal(null);
+  const handleProductCreated = () => {
+    setModal(null);
+    showToast('Product listing published.');
+  };
 
   /* --------------------------------- render --------------------------------- */
   const bar = <AppBar go={go} onBack={goBack} showBack={mode === 'buyer' || hist.length > 0 || screen !== HOME[mode]} mode={mode} screen={screen} cartCount={cartCount} onSwitchMode={switchMode} />;
@@ -392,7 +396,7 @@ function AppInner() {
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}
       {shareFor != null && <ShareSheet pid={shareFor} close={() => setShareFor(null)} onExternal={shareProduct} go={go} showToast={showToast} />}
       {commentPid != null && <CommentsModal pid={commentPid} comments={comments[commentPid] || []} onAdd={addComment} onDelete={deleteComment} close={() => setCommentPid(null)} />}
-      {modal === 'create' && <CreateModal close={closeModal} />}
+      {modal === 'create' && <AddProduct close={closeModal} user={user} sellerAccount={sellerAccount} onPublished={handleProductCreated} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
   );

@@ -1,6 +1,7 @@
 // MC
 import React, { useMemo, useState } from 'react';
 import { ORDER_STAGES, PRODUCTS, money } from '../data.js';
+import { mediaBg } from '../products/media.js';
 
 const TABS = ['All', 'Needs packing', 'In progress', 'Complete'];
 
@@ -44,7 +45,7 @@ export default function SellerOrders({ orders = [], onAdvanceOrder, sellerName =
                 <span className={'seller-order-status' + (order.stage >= 2 ? ' fulfilled' : '')}>{ORDER_STAGES[order.stage]}</span>
               </div>
               <div className="seller-order-item">
-                <span className="seller-order-thumb" style={{ background: `linear-gradient(145deg,${order.product.g[0]},${order.product.g[1]})` }} />
+                <span className="seller-order-thumb" style={{ background: mediaBg(order.product, 145) }} />
                 <span className="seller-order-copy"><b>{order.product.name}</b><small>Size {order.size} · Qty {order.qty}</small></span>
                 <strong>{money(order.product.price * order.qty)}</strong>
               </div>

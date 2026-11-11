@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PRODUCTS, ORDER_STAGES, money } from '../data.js';
 import { ArrowLeftIcon } from './ui/Icons.jsx';
+import { mediaBg } from '../products/media.js';
 
 const STAGE_NOTE = [
   'We received your order and your payment is held safely.',
@@ -28,7 +29,7 @@ export default function Orders({ orders = [], go }) {
         <div className="screen pad">
           <div className="card">
             <div className="row" style={{ gap: 12, justifyContent: 'flex-start' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 10, flex: '0 0 auto', background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
+              <div style={{ width: 48, height: 48, borderRadius: 10, flex: '0 0 auto', background: mediaBg(product) }}></div>
               <div style={{ flex: 1 }}>
                 <b style={{ fontSize: 14 }}>{product.name}</b>
                 <div className="pill">{orderNo(order)} · Qty {order.qty}</div>
@@ -68,7 +69,7 @@ export default function Orders({ orders = [], go }) {
         <div className="screen pad">
           <div className="card">
             <div className="row" style={{ gap: 12, alignItems: 'flex-start', justifyContent: 'flex-start' }}>
-              <div style={{ width: 60, height: 60, borderRadius: 12, flex: '0 0 auto', background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
+              <div style={{ width: 60, height: 60, borderRadius: 12, flex: '0 0 auto', background: mediaBg(product) }}></div>
               <div style={{ flex: 1 }}>
                 <b style={{ fontSize: 14 }}>{product.name}</b>
                 <div className="pill">{product.seller} · {product.city}</div>

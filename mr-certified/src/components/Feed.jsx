@@ -4,6 +4,7 @@ import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import ThemeToggle from './ui/ThemeToggle.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
+import { artStyle, coverOf, offLabel } from '../products/media.js';
 import {
   SearchIcon, SlidersIcon, ChevronDownIcon, CloseIcon, BellIcon,
   StarIcon, ResetIcon, BagIcon, MessageIcon,
@@ -235,7 +236,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       }
     });
     return rows.map(r => r.product);
-  }, [catFilter, query, terms, sort, city, color, size]);
+  }, [catFilter, query, terms, sort, city, color, size, PRODUCTS.length]);
 
   const suggestions = useMemo(() => {
     const q = normalize(query);
@@ -243,7 +244,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
     return PRODUCTS
       .filter(p => normalize(p.name).includes(q) || normalize(p.cat).includes(q) || normalize(p.seller).includes(q))
       .slice(0, 5);
-  }, [query]);
+  }, [query, PRODUCTS.length]);
 
   const resetFilters = () => { setCity('any'); setColor('any'); setSize('any'); };
   const isFiltering = !!query.trim() || activeFilters > 0 || catFilter !== 'For You';
@@ -477,8 +478,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           <article className="market-card" key={product.id}>
             <button
               type="button"
-              className={'market-art market-tone-' + (index % 4)}
-              style={{ '--art-a': product.g[0], '--art-b': product.g[1] }}
+              className={'market-art market-tone-' + (index % 4) + (coverOf(product) ? ' has-photo' : '')}
+              style={artStyle(product)}
               onClick={() => go('product', { pid: product.id })}
               aria-label={'View ' + product.name}
             >
@@ -502,7 +503,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <button type="button" className="market-product-title" onClick={() => go('product', { pid: product.id })}>{product.name}</button>
               <div className="market-rating"><span>★ {product.rating}</span><span>·</span><span>{product.city}</span></div>
               <div className="market-buy-row">
-                <span className="market-price">{money(product.price)}</span>
+                <span className="market-price">{money(product.price)}{product.oldPrice > product.price && <del>{money(product.oldPrice)}</del>}</span>
+                {offLabel(product) && <span className="market-off-label">{offLabel(product)}</span>}
                 <button type="button" className="market-add" onClick={() => addToCart(product.id, product.sizes[0])}><BagIcon size={15} /> Add</button>
               </div>
               <div className="market-actions">

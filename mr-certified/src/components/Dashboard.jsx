@@ -1,6 +1,7 @@
 // MC
 import React from 'react';
 import { DASH, PRODUCTS, money, ORDER_STAGES } from '../data.js';
+import { mediaBg } from '../products/media.js';
 
 export default function Dashboard({ go, threads, orders = [], openModal, sellerName = 'Urban Kicks Kenya' }) {
   const sellerProducts = PRODUCTS.filter((product) => product.seller === sellerName);
@@ -77,7 +78,7 @@ export default function Dashboard({ go, threads, orders = [], openModal, sellerN
             const product = PRODUCTS.find((item) => item.id === order.pid);
             return (
               <div className="seller-recent-order" key={order.id}>
-                <span className="seller-order-thumb" style={{ background: `linear-gradient(145deg,${product.g[0]},${product.g[1]})` }} />
+                <span className="seller-order-thumb" style={{ background: mediaBg(product, 145) }} />
                 <span className="seller-order-copy"><b>{product.name}</b><small>#{String(order.id).slice(-6)} · {order.date}</small></span>
                 <span className={'seller-order-status' + (order.stage >= 2 ? ' fulfilled' : '')}>{ORDER_STAGES[order.stage]}</span>
               </div>

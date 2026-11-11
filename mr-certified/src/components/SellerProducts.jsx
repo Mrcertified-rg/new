@@ -1,6 +1,7 @@
 // MC
 import React, { useMemo, useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
+import { coverOf, mediaBg } from '../products/media.js';
 
 export default function SellerProducts({ openModal, go, sellerName = 'Urban Kicks Kenya' }) {
   const [query, setQuery] = useState('');
@@ -9,7 +10,7 @@ export default function SellerProducts({ openModal, go, sellerName = 'Urban Kick
     product.seller === sellerName
     && (category === 'All' || product.cat === category)
     && (!query || `${product.name} ${product.cat}`.toLowerCase().includes(query.toLowerCase()))
-  )), [sellerName, category, query]);
+  )), [sellerName, category, query, PRODUCTS.length]);
   const categories = ['All', ...new Set(PRODUCTS.filter((product) => product.seller === sellerName).map((product) => product.cat))];
 
   return (
@@ -35,7 +36,7 @@ export default function SellerProducts({ openModal, go, sellerName = 'Urban Kick
         {mine.length ? <div className="seller-product-list">
           {mine.map((product) => (
             <article className="seller-product-card" key={product.id}>
-              <button type="button" className="seller-product-image" style={{ background: `linear-gradient(145deg,${product.g[0]},${product.g[1]})` }} onClick={() => go('product', { pid: product.id })} aria-label={`View ${product.name}`} />
+              <button type="button" className={'seller-product-image' + (coverOf(product) ? ' has-photo' : '')} style={{ background: mediaBg(product, 145) }} onClick={() => go('product', { pid: product.id })} aria-label={`View ${product.name}`} />
               <div className="seller-product-info">
                 <div className="seller-product-heading">
                   <div><b>{product.name}</b><span>{product.cat} · {product.colors.join(', ')}</span></div>
