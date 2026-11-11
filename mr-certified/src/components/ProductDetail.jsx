@@ -18,7 +18,7 @@ export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,addToCar
     </div>
     <h2 style={{marginTop:10}}>{p.name}</h2>
     <div className="pm-price" style={{margin:'4px 0 8px'}}><span className="price" style={{fontSize:19}}>{money(p.price)}</span>{offLabel(p)&&<><del className="pm-was">{money(p.oldPrice)}</del><span className="pm-off">{offLabel(p)} off</span></>}</div>
-    <div className="pm-meta">{p.city&&<span>{p.city}</span>}{p.cat&&<span>{p.cat}</span>}{(p.colors||[]).map((color)=><span key={color}>{color}</span>)}{p.stock!=null&&<span className={p.stock<=3?'low':''}>{p.stock<=3?`Only ${p.stock} left`:`${p.stock} in stock`}</span>}</div>
+    <div className="pm-meta">{p.condition&&p.condition!=='new'&&<span>{p.condition==='like_new'?'Like new':'Used'}</span>}{p.brand&&<span>{p.brand}</span>}{p.cat&&<span>{p.cat}</span>}{(p.colors||[]).map((color)=><span key={color}>{color}</span>)}{p.stock>0&&p.stock<=5&&<span className="low">Only {p.stock} left</span>}{p.stock===0&&<span className="low">Sold out</span>}{p.city&&<span>Ships from {p.city}</span>}</div>
     <p style={{color:'var(--sub)',fontSize:13.5,lineHeight:1.5}}>{p.desc}</p>
     <div className="trust-box">
      <div className="trust-title">✓ MR CERTIFIED STATUS</div>

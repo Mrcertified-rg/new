@@ -1,5 +1,6 @@
 import React from 'react';
 import { PRODUCTS, money } from '../data.js';
+import { mediaBg } from '../products/media.js';
 
 export default function Cart({ cart, setQty, removeItem, toggleItem, toggleAll, go, openModal }) {
   // MC - selection-aware cart totals
@@ -36,7 +37,7 @@ export default function Cart({ cart, setQty, removeItem, toggleItem, toggleAll, 
             <div className="card" key={idx} style={{ opacity: i.checked ? 1 : 0.6 }}>
               <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
                 <div className={'check ' + (i.checked ? 'on' : '')} onClick={() => toggleItem(idx)}>{i.checked ? '✓' : ''}</div>
-                <div style={{ width: 52, height: 52, borderRadius: 10, flex: '0 0 auto', background: `linear-gradient(160deg,${p.g[0]},${p.g[1]})` }}></div>
+                <div style={{ width: 52, height: 52, borderRadius: 10, flex: '0 0 auto', background: mediaBg(p, 160) }}></div>
                 <div style={{ flex: 1 }}>
                   <b style={{ fontSize: 13.5 }}>{p.name}</b>
                   <div className="pill">{p.seller} · size {i.size}</div>

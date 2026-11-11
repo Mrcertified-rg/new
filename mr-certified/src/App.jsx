@@ -322,9 +322,9 @@ function AppInner() {
     setModal(type);
   };
   const closeModal = () => setModal(null);
-  const handleProductCreated = () => {
+  const handleProductCreated = (product) => {
     setModal(null);
-    showToast('Product listing published.');
+    showToast(`"${product?.name || 'Product'}" is now live`, 2600);
   };
 
   /* --------------------------------- render --------------------------------- */
