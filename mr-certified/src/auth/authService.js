@@ -2,215 +2,245 @@
 /**
  * auth/authService.js
  * ---------------------------------------------------------------------------
- * DEMO ACCOUNT SERVICE - runs entirely in the browser (localStorage).
+ * REAL ACCOUNT SERVICE - powered by Supabase (replaces the old localStorage demo).
  *
- * IMPORTANT: this is a stand-in so the sign-in screens and role rules can be
- * built and tested. It is NOT secure enough for real customers because anyone
- * can open DevTools and edit localStorage. Before going live, replace the
- * functions below with calls to your real auth backend (e.g. Neon Auth) and
- * enforce roles/permissions on the server. Every exported function is async
- * and returns plain objects so the swap does not touch any screen.
+ * Supabase Auth stores the email + (hashed) password and keeps people signed in.
+ * Our own tables (profiles, user_roles, seller_businesses - see
+ * supabase/01_auth_schema.sql) hold everything else. The database rules (RLS)
+ * make sure people can only see and change their OWN rows, and that only an
+ * admin can approve a seller.
  *
- * What this file does implement for real:
- *   - password hashing (PBKDF2-SHA256 + random salt via Web Crypto)
- *   - 30-day shared account session, wrong-password lockout, role statuses
+ * The exported function names are the same as before, so the screens did not
+ * need to change. A few "read" helpers stay synchronous by reading a small
+ * in-memory copy that is filled once at start-up by initAuth() (see main.jsx).
  * ---------------------------------------------------------------------------
  */
-import { DEMO_MODE, SESSION_DAYS, MAX_FAILED_ATTEMPTS, LOCKOUT_SECONDS, ROLE_LABEL } from './config.js';
+import { supabase } from '../lib/supabase.js';
+import { MAX_FAILED_ATTEMPTS, LOCKOUT_SECONDS, ROLE_LABEL } from './config.js';
 import { parseIdentifier, normalizeEmail, normalizePhone, passwordProblem, validateDeliveryStep } from './validators.js';
-
-const KEYS = {
-  users: 'mrc.demo.users',
-  session: 'mrc.demo.session',
-  attempts: 'mrc.demo.attempts',
-  business: 'mrc.demo.business',
-};
-
-/* ------------------------------ storage ------------------------------ */
-const read = (key, fallback) => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch { return fallback; }
-};
-const write = (key, value) => {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage full/blocked */ }
-};
 
 const authError = (code, message) => Object.assign(new Error(message), { code });
 
-/* ------------------------- password hashing -------------------------- */
-const ITERATIONS = 150000;
-const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+/* ------------------- in-memory copy of the signed-in account ------------------- */
+let currentUser = null;        // public account object (never contains passwords)
+const businessCache = {};      // userId -> seller business details
+const sessionEndedHandlers = new Set();
+const sessionReadyHandlers = new Set();
+let authInitialized = false;
 
-async function hashPassword(password, saltB64, iterations = ITERATIONS) {
-  if (!globalThis.crypto?.subtle) {
-    throw authError('insecure', 'Open the site over HTTPS (or localhost) so your password can be protected.');
-  }
-  const salt = saltB64 ? fromB64(saltB64) : crypto.getRandomValues(new Uint8Array(16));
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256);
-  return { salt: toB64(salt), hash: toB64(bits), iter: iterations };
+export function onSessionReady(handler) {
+  sessionReadyHandlers.add(handler);
+  if (authInitialized) handler(currentUser);
+  return () => sessionReadyHandlers.delete(handler);
 }
 
-/** Constant-time string compare (avoids leaking how many characters matched). */
-const safeEqual = (a, b) => {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-};
-
-async function passwordMatches(password, record) {
-  const { hash } = await hashPassword(password, record.salt, record.iter);
-  return safeEqual(hash, record.hash);
+/** Lets the UI know if Supabase signs the person out by itself (expired session, other tab...). */
+export function onSessionEnded(handler) {
+  sessionEndedHandlers.add(handler);
+  return () => sessionEndedHandlers.delete(handler);
 }
 
-/* ------------------------ wrong-password lockout ----------------------- */
+/* ----------------------- small browser-side lockout ----------------------- */
+// Friendly UX only. The REAL brute-force protection is Supabase's server-side rate limits.
+const ATTEMPTS_KEY = 'mrc.attempts';
+const readAttempts = () => { try { return JSON.parse(localStorage.getItem(ATTEMPTS_KEY) || '{}'); } catch { return {}; } };
+const writeAttempts = (v) => { try { localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(v)); } catch { /* ignore */ } };
+
 function assertNotLocked(key) {
-  const entry = read(KEYS.attempts, {})[key];
+  const entry = readAttempts()[key];
   if (entry?.until && entry.until > Date.now()) {
     const secs = Math.ceil((entry.until - Date.now()) / 1000);
     throw authError('locked', `Too many wrong attempts. Try again in ${secs}s.`);
   }
 }
 function recordFailure(key) {
-  const all = read(KEYS.attempts, {});
+  const all = readAttempts();
   const entry = all[key] || { count: 0 };
   entry.count += 1;
-  if (entry.count >= MAX_FAILED_ATTEMPTS) {
-    entry.until = Date.now() + LOCKOUT_SECONDS * 1000;
-    entry.count = 0;
-  }
+  if (entry.count >= MAX_FAILED_ATTEMPTS) { entry.until = Date.now() + LOCKOUT_SECONDS * 1000; entry.count = 0; }
   all[key] = entry;
-  write(KEYS.attempts, all);
+  writeAttempts(all);
 }
 function clearFailures(key) {
-  const all = read(KEYS.attempts, {});
+  const all = readAttempts();
   delete all[key];
-  write(KEYS.attempts, all);
+  writeAttempts(all);
 }
 
 /* ------------------------------ helpers ------------------------------ */
-/** What the screens are allowed to see: never any password data. */
-const toPublicUser = (u) => ({
-  id: u.id,
-  firstName: u.firstName,
-  lastName: u.lastName,
-  username: u.username || (u.firstName + (u.lastName ? '.' + u.lastName : '')).toLowerCase().replace(/[^a-z0-9.]/g, ''),
-  email: u.email,
-  phone: u.phone,
-  profilePicture: u.profilePicture || '',
-  theme: u.theme || 'dark',
-  address: { ...u.address },
-  roles: Object.fromEntries(
-    Object.entries(u.roles)
-      .filter(([role]) => role === 'buyer' || role === 'seller')
-      .map(([role, r]) => [role, { status: r.status }]),
-  ),
+const emptyAddress = { county: '', town: '', area: '', landmark: '', altPhone: '', notes: '' };
+
+const toPublicUser = (p, roleRows) => ({
+  id: p.id,
+  firstName: p.first_name,
+  lastName: p.last_name || '',
+  username: p.username,
+  email: p.email,
+  phone: p.phone || '',
+  profilePicture: p.profile_picture || '',
+  theme: p.theme === 'light' ? 'light' : 'dark',
+  address: { ...emptyAddress, ...(p.address || {}) },
+  roles: Object.fromEntries((roleRows || []).map((r) => [r.role, { status: r.status }])),
 });
 
-const loadUsers = () => read(KEYS.users, []);
-const saveUsers = (users) => write(KEYS.users, users);
-const findUserById = (id) => loadUsers().find((u) => u.id === id);
-
-function startSession(userId) {
-  write(KEYS.session, { userId, expiresAt: Date.now() + SESSION_DAYS * 86400000 });
+/** Loads profile + roles + seller business for a signed-in person and caches them. */
+async function loadAccount(userId) {
+  const [profile, roles, biz] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+    supabase.from('user_roles').select('role,status').eq('user_id', userId),
+    supabase.from('seller_businesses').select('*').eq('user_id', userId).maybeSingle(),
+  ]);
+  if (profile.error) throw authError('server', 'Could not load your account. Please try again.');
+  if (!profile.data) return null;
+  businessCache[userId] = biz.data
+    ? { role: 'seller', name: biz.data.business_name, id: biz.data.business_id, kra: biz.data.kra_pin, phone: biz.data.phone || '' }
+    : null;
+  currentUser = toPublicUser(profile.data, roles.data);
+  return currentUser;
 }
 
-/* ------------------------------ sessions ------------------------------ */
-/** Called on app start: returns the signed-in account, or null. */
-export function restoreSession() {
-  const session = read(KEYS.session, null);
-  if (!session) return null;
-  if (session.expiresAt < Date.now()) {
-    localStorage.removeItem(KEYS.session);
-    return null;
+const friendlyAuthError = (error, fallback) => {
+  const msg = String(error?.message || '');
+  if (error?.code === 'email_not_confirmed' || /email not confirmed/i.test(msg)) {
+    return authError('unconfirmed', 'Please confirm your email first - check your inbox for our message.');
   }
-  const user = findUserById(session.userId);
-  return user ? toPublicUser(user) : null;
+  if (/rate limit|too many/i.test(msg) || error?.status === 429) {
+    return authError('rate', 'Too many attempts. Please wait a minute and try again.');
+  }
+  return authError('invalid', fallback);
+};
+
+/* ------------------------------ sessions ------------------------------ */
+/**
+ * Called ONCE before the app first draws (see main.jsx). Asks Supabase whether
+ * this browser is already signed in and, if so, loads that account.
+ */
+export async function initAuth() {
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) {
+      const account = await loadAccount(data.session.user.id);
+      if (!account) await supabase.auth.signOut(); // login exists but no profile row: start clean
+    }
+  } catch (err) {
+    console.error('initAuth failed', err);
+  } finally {
+    authInitialized = true;
+    sessionReadyHandlers.forEach((fn) => fn(currentUser));
+  }
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT' && currentUser) {
+      currentUser = null;
+      sessionEndedHandlers.forEach((fn) => fn());
+    }
+  });
+}
+
+/** Synchronous: returns the account loaded by initAuth()/signIn, or null. */
+export function restoreSession() {
+  return currentUser;
 }
 
 export async function signOutUser() {
-  try { localStorage.removeItem(KEYS.session); } catch { /* ignore */ }
+  try { await supabase.auth.signOut(); } catch { /* ignore */ }
+  currentUser = null;
 }
 
 /* ------------------------- register / sign in ------------------------- */
 /**
- * Creates a login. Seller-intent signup is seller-only; other signups include
- * Buyer access. Seller workspaces are recorded as PENDING applications.
+ * Creates the account. The person's details travel as "metadata"; a database
+ * trigger (handle_new_user) turns them into the profile, roles and business rows.
+ * Seller-intent signup is seller-only; other signups get Buyer access.
+ * Seller access always starts as PENDING.
  */
 export async function registerUser(form) {
   const email = normalizeEmail(form.email);
   const phone = normalizePhone(form.phone);
-  const users = loadUsers();
-  if (users.some((u) => u.email === email || u.phone === phone)) {
-    throw authError('exists', 'An account with this email or phone already exists. Try signing in.');
-  }
-
-  const roles = form.accountIntent === 'seller' ? {} : { buyer: { status: 'approved' } };
   const sellerChoice = form.roleChoices?.seller;
   if (form.accountIntent === 'seller' && !sellerChoice?.on) {
     throw authError('invalid-role', 'Choose the seller workspace to create a seller account.');
   }
-  if (sellerChoice?.on) roles.seller = { status: 'pending' };
 
-  const user = {
-    id: 'u_' + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join(''),
-    firstName: form.firstName.trim(),
-    lastName: form.lastName.trim(),
-    username: (form.firstName + '.' + form.lastName).trim().toLowerCase().replace(/[^a-z0-9.]/g, ''),
-    email,
+  const a = form.address || {};
+  const metadata = {
+    first_name: form.firstName.trim(),
+    last_name: form.lastName.trim(),
     phone,
-    profilePicture: '',
-    theme: 'dark',
-    password: await hashPassword(form.password),
+    account_intent: form.accountIntent || '',
     address: {
-      county: form.address.county,
-      town: form.address.town.trim(),
-      area: form.address.area.trim(),
-      landmark: form.address.landmark.trim(),
-      altPhone: form.address.altPhone.trim() ? normalizePhone(form.address.altPhone) : '',
-      notes: form.address.notes.trim(),
+      county: a.county || '',
+      town: (a.town || '').trim(),
+      area: (a.area || '').trim(),
+      landmark: (a.landmark || '').trim(),
+      altPhone: (a.altPhone || '').trim() ? normalizePhone(a.altPhone) : '',
+      notes: (a.notes || '').trim(),
     },
-    roles,
-    createdAt: new Date().toISOString(),
+    seller: sellerChoice?.on
+      ? {
+          on: true,
+          name: sellerChoice.biz.name.trim(),
+          id: sellerChoice.biz.id.trim(),
+          kra: sellerChoice.biz.kra.trim().toUpperCase(),
+          phone: normalizePhone(sellerChoice.biz.phone),
+        }
+      : { on: false },
   };
-  saveUsers([...users, user]);
-  // Seller details typed during sign-up are saved so that workspace opens straight away.
-  if (sellerChoice?.on && sellerChoice.biz) {
-    const b = sellerChoice.biz;
-    saveBusinessProfile(user.id, {
-      role: 'seller', name: b.name.trim(), id: b.id.trim(), kra: b.kra.trim().toUpperCase(), phone: normalizePhone(b.phone),
-    });
+
+  const { data, error } = await supabase.auth.signUp({ email, password: form.password, options: { data: metadata } });
+  if (error) {
+    if (error.code === 'user_already_exists' || /already (registered|exists)/i.test(error.message)) {
+      throw authError('exists', 'An account with this email or phone already exists. Try signing in.');
+    }
+    if (/database error/i.test(error.message)) {
+      // The only normal cause is a duplicate phone number (unique in the database).
+      throw authError('exists', 'An account with this email or phone already exists. Try signing in.');
+    }
+    if (error.code === 'weak_password') throw authError('weak', error.message);
+    throw friendlyAuthError(error, 'We could not create your account. Please try again.');
   }
-  if (sellerChoice?.on) startSession(user.id);
-  return toPublicUser(user);
+  // With "Confirm email" ON, Supabase hides duplicates by returning a user with no identities.
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    throw authError('exists', 'An account with this email or phone already exists. Try signing in.');
+  }
+
+  // "Confirm email" is ON: no session yet; the person must click the link in their inbox.
+  if (!data.session) return { needsEmailConfirmation: true };
+
+  if (sellerChoice?.on) {
+    const account = await loadAccount(data.user.id); // seller signups stay signed in
+    return account || { needsEmailConfirmation: true };
+  }
+  // Buyer signups go back to the sign-in screen (same flow as before).
+  await supabase.auth.signOut();
+  currentUser = null;
+  return { id: data.user.id };
 }
 
 export async function signInUser(identifierRaw, password) {
   const id = parseIdentifier(identifierRaw);
   if (!id) throw authError('invalid', 'Enter a valid email or phone number.');
+  if (id.type !== 'email') {
+    throw authError('phone-login', 'Phone sign-in is coming soon. Please sign in with your email address for now.');
+  }
   const lockKey = 'signin:' + id.value;
   assertNotLocked(lockKey);
 
-  const user = loadUsers().find((u) => (id.type === 'email' ? u.email : u.phone) === id.value);
-  // Same error for "no such user" and "wrong password" so attackers learn nothing.
-  const ok = user && (await passwordMatches(password, user.password));
-  if (!ok) {
-    recordFailure(lockKey);
-    throw authError('invalid', 'Wrong email/phone or password.');
+  const { data, error } = await supabase.auth.signInWithPassword({ email: id.value, password });
+  if (error) {
+    if (error.code !== 'email_not_confirmed') recordFailure(lockKey);
+    throw friendlyAuthError(error, 'Wrong email or password.');
   }
   clearFailures(lockKey);
-  startSession(user.id);
-  return toPublicUser(user);
+  const account = await loadAccount(data.user.id);
+  if (!account) {
+    await supabase.auth.signOut();
+    throw authError('no-profile', 'Your account setup is incomplete. Please contact support.');
+  }
+  return account;
 }
 
 export async function updateBuyerProfile(userId, profile) {
-  const users = loadUsers();
-  const user = users.find((item) => item.id === userId);
-  if (!user) throw authError('no-user', 'Please sign in again.');
+  if (!currentUser || currentUser.id !== userId) throw authError('no-user', 'Please sign in again.');
 
   const firstName = String(profile.firstName || '').trim();
   const lastName = String(profile.lastName || '').trim();
@@ -223,34 +253,11 @@ export async function updateBuyerProfile(userId, profile) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw authError('invalid-email', 'Enter a valid email address.');
   if (!phone) throw authError('invalid-phone', 'Enter a valid Kenyan phone number.');
 
-  const conflict = users.find((item) => {
-    if (item.id === userId) return false;
-    const existingUsername = item.username || (item.firstName + (item.lastName ? '.' + item.lastName : '')).toLowerCase().replace(/[^a-z0-9.]/g, '');
-    return item.email === email || item.phone === phone || existingUsername.toLowerCase() === username;
-  });
-  if (conflict) throw authError('exists', 'That email, phone number or username is already in use.');
-
-  if (profile.newPassword) {
-    if (!profile.currentPassword || !(await passwordMatches(profile.currentPassword, user.password))) {
-      throw authError('invalid-password', 'Enter your current password to change it.');
-    }
-    const problem = passwordProblem(profile.newPassword);
-    if (problem) throw authError('invalid-password', problem);
-    user.password = await hashPassword(profile.newPassword);
-  }
-
-  user.firstName = firstName;
-  user.lastName = lastName;
-  user.username = username;
-  user.email = email;
-  user.phone = phone;
-  user.profilePicture = profile.profilePicture || '';
-  user.theme = profile.theme === 'light' ? 'light' : 'dark';
-
-  if (profile.address && Object.values(profile.address).some((value) => String(value || '').trim())) {
+  let address = currentUser.address;
+  if (profile.address && Object.values(profile.address).some((v) => String(v || '').trim())) {
     const errors = validateDeliveryStep(profile.address);
     if (Object.keys(errors).length) throw authError('invalid-address', Object.values(errors)[0]);
-    user.address = {
+    address = {
       county: profile.address.county,
       town: profile.address.town.trim(),
       area: profile.address.area.trim(),
@@ -259,114 +266,121 @@ export async function updateBuyerProfile(userId, profile) {
       notes: profile.address.notes.trim(),
     };
   } else if (profile.address) {
-    user.address = { county: '', town: '', area: '', landmark: '', altPhone: '', notes: '' };
+    address = { ...emptyAddress };
   }
 
-  saveUsers(users);
-  return toPublicUser(user);
+  // Password change: prove the current password first, then set the new one.
+  if (profile.newPassword) {
+    const problem = passwordProblem(profile.newPassword);
+    if (problem) throw authError('invalid-password', problem);
+    const check = profile.currentPassword
+      ? await supabase.auth.signInWithPassword({ email: currentUser.email, password: profile.currentPassword })
+      : { error: true };
+    if (check.error) throw authError('invalid-password', 'Enter your current password to change it.');
+    const { error } = await supabase.auth.updateUser({ password: profile.newPassword });
+    if (error) throw authError('invalid-password', error.message);
+  }
+
+  // Email change: Supabase emails a confirmation link; the profile email updates once confirmed.
+  if (email !== currentUser.email) {
+    const { error } = await supabase.auth.updateUser({ email });
+    if (error) throw authError('invalid-email', error.message);
+  }
+
+  const { error } = await supabase.from('profiles').update({
+    first_name: firstName,
+    last_name: lastName,
+    username,
+    phone,
+    profile_picture: profile.profilePicture || '',
+    theme: profile.theme === 'light' ? 'light' : 'dark',
+    address,
+  }).eq('id', userId);
+  if (error) {
+    if (error.code === '23505') throw authError('exists', 'That phone number or username is already in use.');
+    throw authError('server', 'Could not save your profile. Please try again.');
+  }
+  return loadAccount(userId);
 }
 
 /* ---------------------- seller access ---------------------- */
-/**
- * "Log in again" check used every time someone switches into Seller mode.
- * Always verifies the shared account password.
- */
-export async function verifyRolePassword(userId, role, password) {
-  assertSellerRole(role);
-  const user = findUserById(userId);
-  const entry = user?.roles?.[role];
-  if (!entry) throw authError('no-role', `You have not applied for ${ROLE_LABEL[role]} access yet.`);
-  if (entry.status === 'rejected' || entry.status === 'suspended') {
-    throw authError('blocked', `${ROLE_LABEL[role]} access is ${entry.status}.`);
-  }
-  const lockKey = `role:${userId}:${role}`;
-  assertNotLocked(lockKey);
-
-  if (!(await passwordMatches(password, user.password))) {
-    recordFailure(lockKey);
-    throw authError('invalid', `Wrong password for ${ROLE_LABEL[role]} mode.`);
-  }
-  clearFailures(lockKey);
-  return toPublicUser(user);
-}
-
-/**
- * Existing buyer asks for Seller access. Always starts as PENDING and
- * requires the account password (so a borrowed phone cannot add roles).
- */
-export async function applyForRole(userId, role, accountPassword) {
-  assertSellerRole(role);
-  const users = loadUsers();
-  const user = users.find((u) => u.id === userId);
-  if (!user) throw authError('no-user', 'Please sign in again.');
-  if (user.roles[role]) throw authError('exists', `You already applied for ${ROLE_LABEL[role]} access.`);
-
-  const lockKey = `apply:${userId}`;
-  assertNotLocked(lockKey);
-  if (!(await passwordMatches(accountPassword, user.password))) {
-    recordFailure(lockKey);
-    throw authError('invalid', 'Wrong account password.');
-  }
-  clearFailures(lockKey);
-
-  user.roles[role] = { status: 'pending' };
-  saveUsers(users);
-  return toPublicUser(user);
-}
-
-/** DEMO ONLY: pretend an admin approved the application. Disabled when DEMO_MODE is false. */
-export async function setRoleStatusDemo(userId, role, status) {
-  if (!DEMO_MODE) throw authError('forbidden', 'Only an administrator can change a role status.');
-  assertSellerRole(role);
-  const users = loadUsers();
-  const user = users.find((u) => u.id === userId);
-  if (!user?.roles?.[role]) throw authError('no-role', 'No such role application.');
-  user.roles[role].status = status;
-  saveUsers(users);
-  return toPublicUser(user);
-}
-
-/* ------------------------- seller business info ------------------------- */
-/** Keeps the details typed in the existing "create seller account" screen. */
-/** Older saves held one profile ({ role, ... }). */
 function assertSellerRole(role) {
   if (role !== 'seller') throw authError('invalid-role', 'Only seller workspaces are supported.');
 }
 
-const profilesByRole = (entry) => (!entry ? {} : entry.role ? { [entry.role]: entry } : entry);
+/** Re-checks the password with Supabase (used for the "log in again" steps). */
+async function confirmPassword(lockKey, password, wrongMessage) {
+  assertNotLocked(lockKey);
+  const { error } = await supabase.auth.signInWithPassword({ email: currentUser.email, password });
+  if (error) {
+    recordFailure(lockKey);
+    throw authError('invalid', wrongMessage);
+  }
+  clearFailures(lockKey);
+}
+
+/**
+ * "Log in again" check used every time someone switches into Seller mode.
+ * Always verifies the account password and re-reads the role status from the database.
+ */
+export async function verifyRolePassword(userId, role, password) {
+  assertSellerRole(role);
+  if (!currentUser || currentUser.id !== userId) throw authError('no-user', 'Please sign in again.');
+  const fresh = await loadAccount(userId); // picks up admin approvals/suspensions
+  const entry = fresh?.roles?.[role];
+  if (!entry) throw authError('no-role', `You have not applied for ${ROLE_LABEL[role]} access yet.`);
+  if (entry.status === 'rejected' || entry.status === 'suspended') {
+    throw authError('blocked', `${ROLE_LABEL[role]} access is ${entry.status}.`);
+  }
+  await confirmPassword(`role:${userId}:${role}`, password, `Wrong password for ${ROLE_LABEL[role]} mode.`);
+  return fresh;
+}
+
+/** Existing buyer asks for Seller access. Always starts as PENDING. */
+export async function applyForRole(userId, role, accountPassword) {
+  assertSellerRole(role);
+  if (!currentUser || currentUser.id !== userId) throw authError('no-user', 'Please sign in again.');
+  if (currentUser.roles[role]) throw authError('exists', `You already applied for ${ROLE_LABEL[role]} access.`);
+  await confirmPassword(`apply:${userId}`, accountPassword, 'Wrong account password.');
+  const { error } = await supabase.rpc('apply_for_seller');
+  if (error) throw authError('server', 'Could not send your application. Please try again.');
+  return loadAccount(userId);
+}
+
+/** Not available any more: approvals are done by an admin in the Supabase dashboard. */
+export async function setRoleStatusDemo() {
+  throw authError('forbidden', 'Only an administrator can change a role status.');
+}
+
+/* ------------------------- seller business info ------------------------- */
 export const getBusinessProfile = (userId, role) => {
   assertSellerRole(role);
-  const byRole = profilesByRole(read(KEYS.business, {})[userId]);
-  return byRole[role] || null;
+  return businessCache[userId] || null;
 };
+
+/** Updates the local copy immediately and saves to Supabase in the background. */
 export function saveBusinessProfile(userId, profile) {
   assertSellerRole(profile.role);
-  const all = read(KEYS.business, {});
-  all[userId] = { ...profilesByRole(all[userId]), [profile.role]: profile };
-  write(KEYS.business, all);
+  businessCache[userId] = profile;
+  return supabase.from('seller_businesses').upsert({
+    user_id: userId,
+    business_name: profile.name,
+    business_id: profile.id,
+    kra_pin: String(profile.kra || '').toUpperCase(),
+    phone: profile.phone || null,
+    updated_at: new Date().toISOString(),
+  }).then(({ error }) => {
+    if (error) console.error('Could not save business details', error);
+  });
 }
 
 /* ---------------------- people directory (friends) ---------------------- */
-// Friend lists expose only display identity fields, never contact or address details.
-const toPerson = (user) => ({
-  id: user.id,
-  firstName: user.firstName,
-  lastName: user.lastName,
-  username: user.username || '',
-  profilePicture: user.profilePicture || '',
-});
-
+// Step 3 of the backend plan moves friends & chat to Supabase. Until then only
+// your own account is known, so "Find people" returns nothing.
+const toPerson = (u) => ({ id: u.id, firstName: u.firstName, lastName: u.lastName, username: u.username || '', profilePicture: u.profilePicture || '' });
 export function getPerson(id) {
-  const user = findUserById(id);
-  return user ? toPerson(user) : null;
+  return currentUser && currentUser.id === id ? toPerson(currentUser) : null;
 }
-
-/** Search people by name without exposing account contact or address details. */
-export function findPeople(query, excludeId) {
-  const normalizedQuery = (query || '').trim().toLowerCase();
-  if (normalizedQuery.length < 2) return [];
-  return loadUsers()
-    .filter((user) => user.id !== excludeId && (user.firstName + ' ' + user.lastName).toLowerCase().includes(normalizedQuery))
-    .slice(0, 20)
-    .map(toPerson);
+export function findPeople() {
+  return [];
 }

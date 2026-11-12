@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { PRODUCTS, money, initials } from '../data.js';
+import { mediaBg } from '../products/media.js';
 
 const SELLER_BIO = {
   'Urban Kicks Kenya': 'Authentic sneakers, boxed and ready. Nairobi delivery same day, countrywide in 2-3 days. 👟',
@@ -53,7 +54,7 @@ export default function SellerProfile({ pid, go, tab, setTab, following = [], on
         <div className="pgrid">
           {items.map((item) => (
             <div className="pcard" key={item.id} onClick={() => go('product', { pid: item.id })}>
-              <div className="ph" style={{ background: `linear-gradient(160deg,${item.g[0]},${item.g[1]})` }}></div>
+              <div className="ph" style={{ background: mediaBg(item, 160) }}></div>
               <div className="pc-body"><b>{item.name}</b><span className="price">{money(item.price)}</span></div>
             </div>
           ))}

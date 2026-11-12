@@ -15,8 +15,8 @@
  */
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-  restoreSession, registerUser, signInUser, signOutUser,
-  verifyRolePassword, applyForRole, setRoleStatusDemo, updateBuyerProfile,
+  restoreSession, onSessionReady, registerUser, signInUser, signOutUser,
+  verifyRolePassword, applyForRole, setRoleStatusDemo, updateBuyerProfile, onSessionEnded,
 } from './authService.js';
 import { applyThemePreference, getThemePreference } from '../themePreference.js';
 import { rememberUnlocked, forgetUnlocked, forgetPlace, recallUnlocked } from './workspaceMemory.js';
@@ -90,6 +90,18 @@ export function AuthProvider({ children }) {
 
   const signUp = async (form) => {
     const nextUser = await registerUser(form);
+    // Supabase "Confirm email" is ON: the person must click the link we emailed them first.
+    if (nextUser.needsEmailConfirmation) {
+      setSheet((s) => ({
+        ...s,
+        open: true,
+        view: 'signin',
+        roleIntent: null,
+        initialIdentifier: form.email,
+        notice: 'Almost done! We emailed you a confirmation link. Click it, then sign in here.',
+      }));
+      return;
+    }
     if (!form.roleChoices?.seller?.on) {
       setSheet((s) => ({
         ...s,
@@ -118,6 +130,19 @@ export function AuthProvider({ children }) {
     if (!user) throw new Error('Please sign in again to update your profile.');
     setUser(await updateBuyerProfile(user.id, profile));
   };
+
+  // If Supabase ends the session on its own (expired, signed out in another tab), return to guest mode.
+  useEffect(() => onSessionEnded(() => {
+    forgetUnlocked();
+    setElevatedRole(null);
+    setUser(null);
+  }), []);
+
+  // Startup renders in guest mode immediately; replace it with the restored account when ready.
+  useEffect(() => onSessionReady((restoredUser) => {
+    setUser(restoredUser);
+    setElevatedRole(recallUnlocked(restoredUser));
+  }), []);
 
   useEffect(() => {
     applyThemePreference(user?.theme || getThemePreference());

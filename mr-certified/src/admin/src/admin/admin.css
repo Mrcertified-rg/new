@@ -88,6 +88,51 @@ input:focus-visible {
   border-radius: 9px;
 }
 
+.ad-password-field {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+}
+
+.ad-password-field input {
+  min-width: 0;
+  flex: 1;
+}
+
+.ad-password-toggle {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-self: center;
+  border: 1px solid rgba(231, 184, 78, .45);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, #302716, #17150f 72%);
+  color: var(--gold);
+  box-shadow: inset 0 0 0 2px rgba(231, 184, 78, .07), 0 0 10px rgba(231, 184, 78, .08);
+  transition: background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.ad-password-toggle:hover {
+  border-color: var(--gold);
+  background: radial-gradient(circle at 35% 25%, #4a391b, #211a0e 72%);
+  box-shadow: inset 0 0 0 2px rgba(231, 184, 78, .15), 0 0 14px rgba(231, 184, 78, .2);
+}
+
+.ad-password-toggle:active {
+  transform: scale(.96);
+}
+
+.ad-password-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ad-eye-spark {
+  stroke-width: 2.3;
+}
+
 .ad-card {
   background: var(--panel);
   border: 1px solid var(--line);

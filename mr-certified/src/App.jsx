@@ -16,7 +16,7 @@ import SellerSettings from './components/SellerSettings.jsx';
 import SellerCreate from './components/SellerCreate.jsx';
 import Records from './components/Records.jsx';
 import BuyModal from './components/BuyModal.jsx';
-import CreateModal from './components/CreateModal.jsx';
+import AddProduct from './components/AddProduct.jsx';
 import CommentsModal from './components/CommentsModal.jsx';
 import Friends from './components/Friends.jsx';
 import Chat from './components/Chat.jsx';
@@ -35,6 +35,7 @@ import { getBusinessProfile, getPerson, restoreSession, saveBusinessProfile } fr
 import { recallPlace, rememberPlace } from './auth/workspaceMemory.js';
 import { ROLE_LABEL } from './auth/config.js';
 import { listFollowedSellers, toggleFollowedSeller } from './social/socialService.js';
+import { advanceOrder, loadOrders, placeOrders } from './orders/orderService.js';
 
 /* ---------------------------------------------------------------------------
  * Navigation rules (all in one place)
@@ -90,7 +91,7 @@ function AppInner() {
   const [storeTheme, setStoreTheme] = useState('#E7B84E');
   const [transactions, setTransactions] = useState(INIT_TX);
   const [cart, setCart] = useState([]);
-  const [orders, setOrders] = useState(ORDERS);
+  const [orders, setOrders] = useState([]);
   // MC - keep seller follows attached to the signed-in buyer across sessions
   const [following, setFollowing] = useState(() => (user ? listFollowedSellers(user.id) : []));
   // MC - active friend chat and product share sheet
@@ -205,6 +206,22 @@ function AppInner() {
     }
   }, [user?.id]);
 
+  // Signed-in buyers and sellers see only their own Supabase orders.
+  useEffect(() => {
+    let active = true;
+    if (!user) { setOrders([]); return () => { active = false; }; }
+    setOrders([]);
+    loadOrders(mode === 'seller' ? 'seller' : 'buyer', user.id)
+      .then((rows) => { if (active) setOrders(rows); })
+      .catch((error) => {
+        if (active) {
+          setOrders([]);
+          showToast(error.message || 'Could not load your orders.', 2600);
+        }
+      });
+    return () => { active = false; };
+  }, [user?.id, mode]);
+
   useEffect(() => {
     if (!user || screen === 'welcome') return;
     rememberPlace(mode, screen, SELLER_SCREENS.includes(screen), user.id);
@@ -288,22 +305,28 @@ function AppInner() {
   const selectedItems = cart.filter((c) => c.checked);
   const selectedCount = selectedItems.reduce((s, c) => s + c.qty, 0);
   const selectedTotal = selectedItems.reduce((s, c) => s + PRODUCTS.find((x) => x.id === c.pid).price * c.qty, 0);
-  const placeSelectedOrders = () => {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    const customer = user ? {
-      id: user.id,
-      name: [user.firstName, user.lastName].filter(Boolean).join(' '),
-      email: user.email || '',
-      phone: user.phone || '',
-    } : null;
-    const newOrders = selectedItems.map((c, n) => ({ id: Date.now() + n, pid: c.pid, size: c.size, qty: c.qty, date, stage: 0, customer }));
-    setOrders((o) => [...newOrders, ...o]);
-    setCart((c) => c.filter((x) => !x.checked));
+  const placeSingleOrder = async () => {
+    const product = PRODUCTS.find((item) => item.id === pid);
+    if (!product) throw new Error('This product is no longer available.');
+    await placeOrders([{ pid: product.id, size: sizeSel ?? product.sizes?.[0] ?? '', qty: 1 }]);
+    try { setOrders(await loadOrders('buyer', user.id)); }
+    catch { showToast('Order placed, but the order list could not refresh.', 3000); }
   };
-  const advanceSellerOrder = (orderId, stage) => {
-    setOrders((current) => current.map((order) => (
-      order.id === orderId ? { ...order, stage: Math.max(order.stage, stage) } : order
-    )));
+  const placeSelectedOrders = async () => {
+    await placeOrders(selectedItems);
+    setCart((current) => current.filter((item) => !item.checked));
+    try { setOrders(await loadOrders('buyer', user.id)); }
+    catch { showToast('Order placed, but the order list could not refresh.', 3000); }
+  };
+  const handleAdvanceOrder = async (orderId, stage) => {
+    try {
+      const updated = await advanceOrder(orderId, stage);
+      if (updated) setOrders((current) => current.map((order) => order.id === updated.id ? updated : order));
+      try { setOrders(await loadOrders(mode === 'seller' ? 'seller' : 'buyer', user.id)); }
+      catch { showToast('Order updated, but the order list could not refresh.', 3000); }
+    } catch (error) {
+      showToast(error.message || 'Could not update the order.', 2600);
+    }
   };
 
   const sendDm = (productId, from, text) => {
@@ -322,6 +345,10 @@ function AppInner() {
     setModal(type);
   };
   const closeModal = () => setModal(null);
+  const handleProductCreated = (product) => {
+    setModal(null);
+    showToast(`"${product?.name || 'Product'}" is now live`, 2600);
+  };
 
   /* --------------------------------- render --------------------------------- */
   const bar = <AppBar go={go} onBack={goBack} showBack={mode === 'buyer' || hist.length > 0 || screen !== HOME[mode]} mode={mode} screen={screen} cartCount={cartCount} onSwitchMode={switchMode} />;
@@ -371,11 +398,11 @@ function AppInner() {
   else if (screen === 'inbox') body = withBar(<SellerInbox dms={dms} go={go} />);
   else if (screen === 'sellerprofile') body = withBar(<SellerProfile pid={pid} go={go} tab={tab} setTab={setTab} following={following} onFollow={toggleFollow} />);
   // MC - provide order history and product navigation to tracking
-  else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} />);
+  else if (screen === 'orders') body = withBar(<Orders orders={orders} go={go} onAdvanceOrder={handleAdvanceOrder} />);
   else if (screen === 'buyerprofile') body = withBar(<BuyerProfile go={go} openChat={openChat} profileId={pid} profile={pid ? getPerson(pid) : null} />);
   else if (screen === 'dash') body = withBar(<Dashboard go={go} threads={threads} orders={orders} openModal={openModal} sellerName={sellerAccount?.name} />);
   else if (screen === 'sellerproducts') body = withBar(<SellerProducts openModal={openModal} go={go} sellerName={sellerAccount?.name} />);
-  else if (screen === 'sellerorders') body = withBar(<SellerOrders orders={orders} onAdvanceOrder={advanceSellerOrder} sellerName={sellerAccount?.name} />);
+  else if (screen === 'sellerorders') body = withBar(<SellerOrders orders={orders} onAdvanceOrder={handleAdvanceOrder} sellerName={sellerAccount?.name} />);
   else if (screen === 'customers') body = withBar(<Customers orders={orders} sellerName={sellerAccount?.name} />);
   else if (screen === 'records') body = withBar(<Records transactions={transactions} addTx={addTx} />);
   else if (screen === 'marketing') body = withBar(<Marketing />);
@@ -387,12 +414,12 @@ function AppInner() {
       {body}
       {mode === 'buyer' && ['feed', 'reels', 'friends', 'cart', 'buyerprofile', 'product', 'sellerprofile'].includes(screen) && <BuyerNav screen={screen} go={go} goHome={goHome} cartCount={cartCount} />}
       {mode === 'seller' && elevatedRole === 'seller' && ['dash', 'sellerproducts', 'sellerorders', 'customers', 'records', 'marketing', 'ai', 'sellerprofilepage', 'inbox'].includes(screen) && <SellerNav screen={screen} go={go} />}
-      {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} close={closeModal} go={go} />}
+      {modal === 'buy' && <BuyModal pid={pid} sizeSel={sizeSel || (PRODUCTS.find((p) => p.id === pid) || {}).sizes?.[0]} onDone={placeSingleOrder} close={closeModal} go={go} />}
       {/* MC - checkout uses selected cart total and saves the placed order */}
       {modal === 'checkout' && <BuyModal pid={null} sizeSel={null} label={'Cart - ' + selectedCount + ' item(s)'} amount={selectedTotal} onDone={placeSelectedOrders} close={closeModal} go={go} />}
       {shareFor != null && <ShareSheet pid={shareFor} close={() => setShareFor(null)} onExternal={shareProduct} go={go} showToast={showToast} />}
       {commentPid != null && <CommentsModal pid={commentPid} comments={comments[commentPid] || []} onAdd={addComment} onDelete={deleteComment} close={() => setCommentPid(null)} />}
-      {modal === 'create' && <CreateModal close={closeModal} />}
+      {modal === 'create' && <AddProduct close={closeModal} user={user} sellerAccount={sellerAccount} onPublished={handleProductCreated} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
   );

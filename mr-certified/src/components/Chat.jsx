@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PRODUCTS } from '../data.js';
 import ProductPreview from './ProductPreview.jsx';
+import { mediaBg } from '../products/media.js';
 import { getPerson } from '../auth/authService.js';
 import { relation, getMessages, sendMessage, markRead, removeLink, fullName, personInitials } from '../social/socialService.js';
 
@@ -110,7 +111,7 @@ export default function Chat({ me, otherId, go, onBack }) {
           <div className="mq-chat-section-label">SHARE A PRODUCT WITH YOUR FRIEND</div>
           {PRODUCTS.map((product) => (
             <div className="mq-chat-picker-item" key={product.id} onClick={() => shareProduct(product.id)}>
-              <div className="mq-chat-thumb" style={{ width: 36, height: 36, borderRadius: 8, background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
+              <div className="mq-chat-thumb" style={{ width: 36, height: 36, borderRadius: 8, background: mediaBg(product) }}></div>
               <div className="mq-chat-context-info"><b>{product.name}</b><span>{money(product.price)} · {product.seller}</span></div>
               <span className="mq-chat-context-action">Send</span>
             </div>
