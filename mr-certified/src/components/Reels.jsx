@@ -1,6 +1,7 @@
 // MC
 import React, { useEffect, useRef, useState } from 'react';
 import { PRODUCTS, money } from '../data.js';
+import { artStyle, coverOf } from '../products/media.js';
 import { BagIcon, MessageIcon, StarIcon } from './ui/Icons.jsx';
 
 export default function Reels({ go, addToCart, liked = [], onToggleLike, onComment, commentCount = () => 0, onShare, following = [], onFollow }) {
@@ -34,8 +35,8 @@ export default function Reels({ go, addToCart, liked = [], onToggleLike, onComme
       {PRODUCTS.map((product, index) => (
         <article className="reel-card" key={product.id} onClick={(event) => handleReelTap(event, product.id)}>
           <div
-            className="reel-art"
-            style={{ '--art-a': product.g[0], '--art-b': product.g[1] }}
+            className={'reel-art' + (coverOf(product) ? ' has-photo' : '')}
+            style={artStyle(product)}
             aria-hidden="true"
           >
             <span className="reel-edition">MERQO FINDS · {String(index + 1).padStart(2, '0')}</span>

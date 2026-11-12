@@ -2,6 +2,7 @@
 import React from 'react';
 import { PRODUCTS, ORDER_STAGES, money } from '../data.js';
 import { ArrowLeftIcon } from './ui/Icons.jsx';
+import { mediaBg } from '../products/media.js';
 
 export default function MyOrders({orders,go,onBack}){
  return (
@@ -17,7 +18,7 @@ export default function MyOrders({orders,go,onBack}){
      return (
       <div className="card" key={o.id}>
        <div className="row" style={{gap:12,alignItems:'flex-start'}}>
-        <div onClick={()=>go('product',{pid:p.id})} style={{width:60,height:60,borderRadius:12,flex:'0 0 auto',background:`linear-gradient(160deg,${p.g[0]},${p.g[1]})`}}></div>
+        <div onClick={()=>go('product',{pid:p.id})} style={{width:60,height:60,borderRadius:12,flex:'0 0 auto',background:mediaBg(p,160)}}></div>
         <div style={{flex:1}}>
          <b style={{fontSize:14}}>{p.name}</b>
          <div className="pill">Ordered {o.date} · {ORDER_STAGES[o.stage]}</div>

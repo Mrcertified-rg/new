@@ -1,9 +1,10 @@
 // MC
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { PRODUCTS, money } from '../data.js';
 import Popover, { useOutside } from './ui/Popover.jsx';
 import ThemeToggle from './ui/ThemeToggle.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
+import { artStyle, coverOf, offLabel } from '../products/media.js';
 import {
   SearchIcon, SlidersIcon, ChevronDownIcon, CloseIcon, BellIcon,
   StarIcon, ResetIcon, BagIcon, MessageIcon,
@@ -150,7 +151,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   const [sort, setSort] = useState('featured');
   const [showSug, setShowSug] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
   const [promoPaused, setPromoPaused] = useState(false);
   const promoTouchStart = useRef(null);
@@ -236,7 +236,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       }
     });
     return rows.map(r => r.product);
-  }, [catFilter, query, terms, sort, city, color, size]);
+  }, [catFilter, query, terms, sort, city, color, size, PRODUCTS.length]);
 
   const suggestions = useMemo(() => {
     const q = normalize(query);
@@ -244,7 +244,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
     return PRODUCTS
       .filter(p => normalize(p.name).includes(q) || normalize(p.cat).includes(q) || normalize(p.seller).includes(q))
       .slice(0, 5);
-  }, [query]);
+  }, [query, PRODUCTS.length]);
 
   const resetFilters = () => { setCity('any'); setColor('any'); setSize('any'); };
   const isFiltering = !!query.trim() || activeFilters > 0 || catFilter !== 'For You';
@@ -259,7 +259,7 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
   ].filter(Boolean);
 
   return (
-    <React.Fragment>
+    <div className="buyer-home-page">
       <div className="mc-masthead">
         <div className="mc-wordmark">MERQO<span>.</span></div>
         <div className="mc-masthead-right">
@@ -332,6 +332,24 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           </div>
         )}
       </div>
+
+      <section className="market-edits" aria-label="Product categories">
+        <div className="market-category-bar">
+          <div className="market-edit-list" role="group" aria-label="Scroll to browse product categories" tabIndex={0}>
+            {CATEGORY_TABS.map(category => (
+              <button
+                type="button"
+                key={category.value}
+                className={'market-edit' + (category.value === catFilter ? ' on' : '')}
+                onClick={() => setCatFilter(category.value)}
+                aria-pressed={category.value === catFilter}
+              >
+                <b>{category.label}</b>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ---------- filters panel (opens in place, pushes mc content down) ---------- */}
       {panelOpen && (
@@ -436,52 +454,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
       </div>
       </div>
 
-      {/* Keep category shortcuts outside the scrolling product feed. */}
-      <section className="market-edits" aria-label="Product categories">
-        <div className="market-category-bar">
-          <div className="market-edit-list">
-            {CATEGORY_TABS.slice(0, 6).map(category => (
-              <button
-                type="button"
-                key={category.value}
-                className={'market-edit' + (category.value === catFilter ? ' on' : '')}
-                onClick={() => { setCatFilter(category.value); setCategoriesOpen(false); }}
-                aria-pressed={category.value === catFilter}
-              >
-                <b>{category.label}</b>
-              </button>
-            ))}
-          </div>
-          {CATEGORY_TABS.length > 6 && (
-            <button
-              type="button"
-              className={'market-category-toggle' + (categoriesOpen ? ' on' : '')}
-              onClick={() => setCategoriesOpen((open) => !open)}
-              aria-expanded={categoriesOpen}
-              aria-label={categoriesOpen ? 'Hide more categories' : 'Show more categories'}
-              title={categoriesOpen ? 'Hide more categories' : 'Show more categories'}
-            >
-              <ChevronDownIcon size={17} />
-            </button>
-          )}
-        </div>
-        {categoriesOpen && (
-          <div className="market-category-menu" aria-label="More product categories">
-            {CATEGORY_TABS.slice(6).map(category => (
-              <button
-                type="button"
-                key={category.value}
-                className={'market-category-option' + (category.value === catFilter ? ' on' : '')}
-                onClick={() => { setCatFilter(category.value); setCategoriesOpen(false); }}
-                aria-pressed={category.value === catFilter}
-              >
-                <b>{category.label}</b>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* ---------- feed ---------- */}
       <div className="screen market-feed" onScroll={handleFeedScroll}>
         <div className="market-list-heading">
@@ -506,8 +478,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           <article className="market-card" key={product.id}>
             <button
               type="button"
-              className={'market-art market-tone-' + (index % 4)}
-              style={{ '--art-a': product.g[0], '--art-b': product.g[1] }}
+              className={'market-art market-tone-' + (index % 4) + (coverOf(product) ? ' has-photo' : '')}
+              style={artStyle(product)}
               onClick={() => go('product', { pid: product.id })}
               aria-label={'View ' + product.name}
             >
@@ -531,7 +503,8 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
               <button type="button" className="market-product-title" onClick={() => go('product', { pid: product.id })}>{product.name}</button>
               <div className="market-rating"><span>★ {product.rating}</span><span>·</span><span>{product.city}</span></div>
               <div className="market-buy-row">
-                <span className="market-price">{money(product.price)}</span>
+                <span className="market-price">{money(product.price)}{product.oldPrice > product.price && <del>{money(product.oldPrice)}</del>}</span>
+                {offLabel(product) && <span className="market-off-label">{offLabel(product)}</span>}
                 <button type="button" className="market-add" onClick={() => addToCart(product.id, product.sizes[0])}><BagIcon size={15} /> Add</button>
               </div>
               <div className="market-actions">
@@ -549,6 +522,6 @@ export default function Feed({ go, catFilter, setCatFilter, cartCount = 0, mode 
           </article>
         ))}
       </div>
-    </React.Fragment>
+    </div>
   );
 }

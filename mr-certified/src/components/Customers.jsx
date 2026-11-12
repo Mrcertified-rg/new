@@ -8,7 +8,7 @@ export default function Customers({ orders = [], sellerName = 'Urban Kicks Kenya
     const records = new Map();
     orders.forEach((order) => {
       const product = PRODUCTS.find((item) => item.id === order.pid);
-      if (product?.seller !== sellerName || !order.customer?.id) return;
+      if (!order.customer?.id) return;
       const customer = order.customer;
       const existing = records.get(customer.id) || {
         ...customer,
@@ -17,7 +17,7 @@ export default function Customers({ orders = [], sellerName = 'Urban Kicks Kenya
         lastOrder: order.date,
       };
       existing.orderCount += 1;
-      existing.totalSpent += product.price * order.qty;
+      existing.totalSpent += (order.unitPrice ?? product?.price ?? 0) * order.qty;
       records.set(customer.id, existing);
     });
     return [...records.values()].filter((customer) => (

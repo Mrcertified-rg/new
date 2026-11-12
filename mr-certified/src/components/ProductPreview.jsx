@@ -1,18 +1,11 @@
 // MC
 import React, { useState } from 'react';
 import { money } from '../data.js';
-
-const productImage = (product) => (
-  product.image
-  || product.imageUrl
-  || product.image_url
-  || product.thumbnail
-  || (Array.isArray(product.images) ? product.images[0] : '')
-);
+import { coverOf, mediaBg } from '../products/media.js';
 
 export default function ProductPreview({ product, onView, compact = false }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const image = productImage(product);
+  const image = coverOf(product);
   const details = [
     product.colors?.length ? product.colors.join(', ') : '',
     product.sizes?.length ? `${product.sizes.length} sizes` : '',
@@ -21,7 +14,7 @@ export default function ProductPreview({ product, onView, compact = false }) {
 
   return (
     <button type="button" className={`mq-product-preview${compact ? ' compact' : ''}`} onClick={onView}>
-      <span className="mq-product-preview-image" style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}>
+      <span className="mq-product-preview-image" style={{ background: mediaBg(product) }}>
         {image && !imageFailed
           ? <img src={image} alt="" onError={() => setImageFailed(true)} />
           : <span aria-hidden="true">{product.name.slice(0, 1)}</span>}

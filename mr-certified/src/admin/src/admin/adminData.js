@@ -2,77 +2,93 @@
 /**
  * admin/adminData.js
  * ---------------------------------------------------------------------------
- * Everything the console reads/writes. DEMO: reads the same browser storage the
- * public app uses (same origin, so run it from localhost:5173/admin.html).
- * BACKEND LATER: keep these function names, replace the bodies with API calls
- * and enforce every rule on the server. Password data is never returned here.
+ * Everything the console reads/writes, now from Supabase.
+ * The database only answers these calls when the signed-in person is listed in
+ * the "admins" table, and the rules for approving a seller live in the
+ * database function admin_set_seller_status (not in the browser).
+ * All functions are async.
  * ---------------------------------------------------------------------------
  */
-import { PRODUCTS, ORDER_STAGES } from '../../../data.js';
-import { adminEmail } from './adminAuth.js';
-
-// Must match the keys used by auth/authService.js and shared/orderStore.js
-const K = { users: 'mrc.demo.users', business: 'mrc.demo.business', orders: 'mrc.demo.orders', audit: 'mrc.admin.audit' };
-const read = (key, fallback) => { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } };
-const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* blocked */ } };
+import { adminClient as supabase } from './adminClient.js';
 
 export const money = (n) => 'KSh ' + Number(n || 0).toLocaleString('en-KE');
 export const when = (v) => (v ? new Date(v).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 export const mask = (s) => { const v = String(s || ''); return v.length <= 3 ? '•••' : '•'.repeat(v.length - 3) + v.slice(-3); };
 
-const profilesByRole = (e) => (!e ? {} : e.role ? { [e.role]: e } : e);
-
 /* ------------------------------ audit log ------------------------------ */
-export function logAudit(action, detail = '') {
-  const log = read(K.audit, []);
-  log.unshift({ t: new Date().toISOString(), by: adminEmail() || 'unknown', action, detail });
-  write(K.audit, log.slice(0, 1000));
+/** Records an admin action. Never blocks or breaks the screen if it fails. */
+export async function logAudit(action, detail = '') {
+  try {
+    await supabase.rpc('admin_log', { p_action: action, p_detail: detail });
+  } catch (err) {
+    console.error('audit log failed', err);
+  }
 }
-export const listAudit = () => read(K.audit, []);
+
+export async function listAudit() {
+  const { data, error } = await supabase
+    .from('admin_audit').select('*').order('at', { ascending: false }).limit(500);
+  if (error) throw new Error('Could not load the audit log.');
+  return data.map((l) => ({ t: l.at, by: l.by_email, action: l.action, detail: l.detail }));
+}
 
 /* ------------------------------- accounts ------------------------------- */
-export function listAccounts() {
-  const biz = read(K.business, {});
-  return read(K.users, []).map((u) => ({
-    id: u.id,
-    name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
-    email: u.email,
-    phone: u.phone,
-    county: u.address?.county || '',
-    createdAt: u.createdAt || '',
-    buyer: u.roles?.buyer?.status || null,
-    seller: u.roles?.seller?.status || null,
-    sellerReason: u.roles?.seller?.reason || '',
-    business: profilesByRole(biz[u.id]).seller || null,
-  })).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+export async function listAccounts() {
+  const [profiles, roles, biz] = await Promise.all([
+    supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+    supabase.from('user_roles').select('*'),
+    supabase.from('seller_businesses').select('*'),
+  ]);
+  if (profiles.error || roles.error || biz.error) {
+    throw new Error('Could not load accounts. Is this login listed as an administrator?');
+  }
+  const roleOf = (id, role) => roles.data.find((r) => r.user_id === id && r.role === role);
+  return profiles.data.map((p) => {
+    const seller = roleOf(p.id, 'seller');
+    const b = biz.data.find((x) => x.user_id === p.id);
+    return {
+      id: p.id,
+      name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+      email: p.email,
+      phone: p.phone || '',
+      county: p.address?.county || '',
+      createdAt: p.created_at || '',
+      buyer: roleOf(p.id, 'buyer')?.status || null,
+      seller: seller?.status || null,
+      sellerReason: seller?.reason || '',
+      business: b ? { name: b.business_name, id: b.business_id, kra: b.kra_pin, phone: b.phone || '' } : null,
+    };
+  });
 }
 
 const STATUSES = ['pending', 'approved', 'rejected', 'suspended'];
-export function setSellerStatus(userId, status, reason = '') {
+export async function setSellerStatus(userId, status, reason = '') {
   if (!STATUSES.includes(status)) throw new Error('Unknown status.');
-  const users = read(K.users, []);
-  const u = users.find((x) => x.id === userId);
-  if (!u?.roles?.seller) throw new Error('This account has no seller application.');
-  const before = u.roles.seller.status;
-  u.roles.seller = { ...u.roles.seller, status, reason, reviewedAt: new Date().toISOString(), reviewedBy: adminEmail() };
-  write(K.users, users);
-  logAudit('seller.' + status, `${u.email}: ${before} -> ${status}${reason ? ' | ' + reason : ''}`);
+  const { error } = await supabase.rpc('admin_set_seller_status', { p_user: userId, p_status: status, p_reason: reason });
+  if (error) throw new Error(error.message || 'Could not change the status.');
 }
 
 /* ----------------------------- transactions ----------------------------- */
-export function listOrders() {
-  return Object.values(read(K.orders, {})).map((o) => {
-    const p = PRODUCTS.find((x) => x.id === o.pid);
-    return {
-      ...o,
-      product: p?.name || 'Unknown product',
-      seller: p?.seller || '—',
-      amount: o.amount ?? (p ? p.price * (o.qty || 1) : 0),
-      stageLabel: ORDER_STAGES[o.stage] ?? '—',
-      payment: o.stage >= 4 ? 'Released to seller' : 'Held in escrow',
-      at: o.placedAt || o.id,
-    };
-  }).sort((a, b) => b.at - a.at);
+const STAGES = ['Placed', 'Packed', 'Shipped', 'Out for delivery', 'Delivered'];
+
+/** All orders placed in the shop (requires the orders migration). */
+export async function listOrders() {
+  const { data, error } = await supabase
+    .from('orders').select('*').order('created_at', { ascending: false }).limit(1000);
+  if (error) throw new Error('Could not load orders. Have you applied the orders migration in Supabase?');
+  return data.map((o) => ({
+    id: o.id,
+    at: o.created_at,
+    customer: { name: o.buyer_name, email: o.buyer_email, phone: o.buyer_phone },
+    product: o.product_name,
+    size: o.size,
+    seller: o.seller_name,
+    qty: o.qty,
+    amount: o.amount,
+    stage: o.stage,
+    stageLabel: STAGES[o.stage] || '—',
+    payment: o.stage >= 4 ? 'Completed' : 'Awaiting delivery',
+  }));
 }
 
 export function getStats(accounts, orders) {

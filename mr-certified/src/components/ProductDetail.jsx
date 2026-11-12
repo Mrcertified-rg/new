@@ -1,6 +1,8 @@
 // MC
-import React, { useState } from 'react';
+import React from 'react';
 import { PRODUCTS, money } from '../data.js';
+import { offLabel } from '../products/media.js';
+import ProductMedia from './ProductMedia.jsx';
 
 export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,addToCart,liked,onToggleLike}){
  const p=PRODUCTS.find(x=>x.id===pid);
@@ -8,14 +10,15 @@ export default function ProductDetail({pid,go,onBack,sizeSel,setSizeSel,addToCar
  const sel=sizeSel||p.sizes[0];
  return (
   <div className="screen">
-   <div className="pd-media" style={{background:`linear-gradient(160deg,${p.g[0]},${p.g[1]})`}} />
+   <ProductMedia p={p} />
    <div className="pd-body">
     <div className="row" onClick={()=>go('sellerprofile',{pid:p.id})}>
      <div style={{fontWeight:600}}>{p.seller} <span className="badge">✓</span></div>
      <span className="product-view-profile">View profile ›</span>
     </div>
     <h2 style={{marginTop:10}}>{p.name}</h2>
-    <div className="price" style={{fontSize:19,margin:'4px 0 8px'}}>{money(p.price)}</div>
+    <div className="pm-price" style={{margin:'4px 0 8px'}}><span className="price" style={{fontSize:19}}>{money(p.price)}</span>{offLabel(p)&&<><del className="pm-was">{money(p.oldPrice)}</del><span className="pm-off">{offLabel(p)} off</span></>}</div>
+    <div className="pm-meta">{p.condition&&p.condition!=='new'&&<span>{p.condition==='like_new'?'Like new':'Used'}</span>}{p.brand&&<span>{p.brand}</span>}{p.cat&&<span>{p.cat}</span>}{(p.colors||[]).map((color)=><span key={color}>{color}</span>)}{p.stock>0&&p.stock<=5&&<span className="low">Only {p.stock} left</span>}{p.stock===0&&<span className="low">Sold out</span>}{p.city&&<span>Ships from {p.city}</span>}</div>
     <p style={{color:'var(--sub)',fontSize:13.5,lineHeight:1.5}}>{p.desc}</p>
     <div className="trust-box">
      <div className="trust-title">✓ MR CERTIFIED STATUS</div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PRODUCTS } from '../data.js';
 import { findPeople } from '../auth/authService.js';
+import { mediaBg } from '../products/media.js';
 import {
   relation, sendFriendRequest, acceptRequest, removeLink,
   listChats, listIncoming, listOutgoing, fullName, personInitials,
@@ -96,7 +97,7 @@ export default function Friends({ me, go, openChat, following = [], onFollow, sh
             {productChats.length > 0 && <div className="mq-chat-section-label">PRODUCT / SELLER CHATS</div>}
             {productChats.map(({ product, last }) => (
               <div className="mq-chat-person-row" key={product.id} onClick={() => go('dm', { pid: product.id })} style={{ cursor: 'pointer' }}>
-                <span className="mq-chat-list-avatar product-avatar" style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></span>
+                <span className="mq-chat-list-avatar product-avatar" style={{ background: mediaBg(product) }}></span>
                 <div className="mq-chat-list-copy">
                   <b>{product.seller}</b>
                   <span>{product.name} · {(last.from === 'buyer' ? 'You: ' : 'Seller: ') + last.text}</span>

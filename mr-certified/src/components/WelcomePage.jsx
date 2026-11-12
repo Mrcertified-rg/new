@@ -7,6 +7,7 @@ import {
 import { PRODUCTS, money } from '../data.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { STATUS_LABEL } from '../auth/config.js';
+import { mediaBg } from '../products/media.js';
 import '../welcome.css';
 
 function LogoMark() {
@@ -33,7 +34,7 @@ function PhonePreview() {
         <div className="wl-tiles">
           {items.map((product) => (
             <div key={product.id}>
-              <i style={{ background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }} />
+              <i style={{ background: mediaBg(product) }} />
               <span>{product.name}</span>
               <b>{money(product.price)}</b>
             </div>

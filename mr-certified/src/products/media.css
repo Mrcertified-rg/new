@@ -1,0 +1,36 @@
+/* MC - shows real product photos / video where the app used coloured placeholders */
+
+.market-art,.reel-art{background-repeat:no-repeat;background-size:cover;background-position:center;}
+
+/* Feed + reels cards that have a real photo: hide the decorative placeholder art */
+.market-art.has-photo{background-size:cover;background-position:center;}
+.market-art.has-photo .market-orbit,
+.market-art.has-photo .market-art-title,
+.market-art.has-photo .market-art-stamp{display:none;}
+.market-art.has-photo::before{display:none;}
+.market-art.has-photo::after{display:block;content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.38),transparent 38%);pointer-events:none;}
+
+/* Product page gallery (swipe left / right) */
+.pm-gallery{position:relative;overflow:hidden;}
+.pm-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.pm-track::-webkit-scrollbar{display:none;}
+.pm-slide{flex:0 0 100%;height:100%;scroll-snap-align:center;position:relative;background-size:cover;background-position:center;}
+.pm-slide video{width:100%;height:100%;object-fit:cover;background:#000;display:block;}
+.pm-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none;}
+.pm-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);transition:all .2s;}
+.pm-dots i.on{width:16px;border-radius:4px;background:#fff;}
+.pm-count{position:absolute;top:12px;right:12px;padding:3px 9px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;}
+.pm-videotag{position:absolute;top:12px;left:12px;padding:3px 9px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;}
+
+/* price line on product page */
+.pm-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;}
+.pm-was{color:var(--sub);font-size:13px;text-decoration:line-through;}
+.pm-off{background:var(--gold);color:#101214;font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px;}
+.pm-meta{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+.pm-meta span{font-size:11.5px;color:var(--sub);border:1px solid var(--line);border-radius:20px;padding:3px 9px;}
+.pm-meta span.low{color:var(--red);border-color:var(--red);}
+
+/* Reels with a real photo */
+.reel-art.has-photo{background-size:cover;background-position:center;}
+.reel-art.has-photo .reel-orbit,
+.reel-art.has-photo .reel-category{display:none;}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PRODUCTS, ORDER_STAGES, money } from '../data.js';
 import { ArrowLeftIcon } from './ui/Icons.jsx';
+import { mediaBg } from '../products/media.js';
 
 const STAGE_NOTE = [
   'We received your order and your payment is held safely.',
@@ -12,7 +13,7 @@ const STAGE_NOTE = [
 
 const orderNo = (o) => 'MC-' + String(o.id).slice(-6).padStart(4, '0');
 
-export default function Orders({ orders = [], go }) {
+export default function Orders({ orders = [], go, onAdvanceOrder }) {
   // MC - order tracking and detail views
   const [view, setView] = useState(null);
   const order = view ? orders.find((o) => o.id === view.id) : null;
@@ -28,7 +29,7 @@ export default function Orders({ orders = [], go }) {
         <div className="screen pad">
           <div className="card">
             <div className="row" style={{ gap: 12, justifyContent: 'flex-start' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 10, flex: '0 0 auto', background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
+              <div style={{ width: 48, height: 48, borderRadius: 10, flex: '0 0 auto', background: mediaBg(product) }}></div>
               <div style={{ flex: 1 }}>
                 <b style={{ fontSize: 14 }}>{product.name}</b>
                 <div className="pill">{orderNo(order)} · Qty {order.qty}</div>
@@ -58,7 +59,7 @@ export default function Orders({ orders = [], go }) {
   }
 
   if (order && product && view.type === 'details') {
-    const total = product.price * order.qty;
+    const total = (order.unitPrice ?? product.price) * order.qty;
     return (
       <React.Fragment>
         <div className="topbar" style={{ justifyContent: 'flex-start', gap: 12 }}>
@@ -68,7 +69,7 @@ export default function Orders({ orders = [], go }) {
         <div className="screen pad">
           <div className="card">
             <div className="row" style={{ gap: 12, alignItems: 'flex-start', justifyContent: 'flex-start' }}>
-              <div style={{ width: 60, height: 60, borderRadius: 12, flex: '0 0 auto', background: `linear-gradient(160deg,${product.g[0]},${product.g[1]})` }}></div>
+              <div style={{ width: 60, height: 60, borderRadius: 12, flex: '0 0 auto', background: mediaBg(product) }}></div>
               <div style={{ flex: 1 }}>
                 <b style={{ fontSize: 14 }}>{product.name}</b>
                 <div className="pill">{product.seller} · {product.city}</div>
@@ -81,7 +82,7 @@ export default function Orders({ orders = [], go }) {
               <div>Status<span>{ORDER_STAGES[order.stage]}</span></div>
               <div>Size<span>{order.size}</span></div>
               <div>Quantity<span>{order.qty}</span></div>
-              <div>Price each<span>{money(product.price)}</span></div>
+              <div>Price each<span>{money(order.unitPrice ?? product.price)}</span></div>
             </div>
           </div>
 
@@ -113,8 +114,8 @@ export default function Orders({ orders = [], go }) {
             <div className="card" key={o.id}>
               <div className="row" style={{ alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, flex: '0 0 auto', background: `linear-gradient(160deg,${p.g[0]},${p.g[1]})` }}></div>
-                  <div><b style={{ fontSize: 13.5 }}>{p.name}</b><div className="pill">{p.seller} · Qty {o.qty} · {o.date}</div></div>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, flex: '0 0 auto', background: p ? `linear-gradient(160deg,${p.g[0]},${p.g[1]})` : 'var(--panel)' }}></div>
+                  <div><b style={{ fontSize: 13.5 }}>{p?.name || o.product || 'Product'}</b><div className="pill">{p?.seller || o.seller || ''} · Qty {o.qty} · {o.date}</div></div>
                 </div>
                 <span style={{ color: o.stage >= 4 ? 'var(--green)' : 'var(--gold)', fontSize: 12.5, textAlign: 'right' }}>{ORDER_STAGES[o.stage]}</span>
               </div>
@@ -122,6 +123,7 @@ export default function Orders({ orders = [], go }) {
                 <button className="btn green" style={{ flex: 1, padding: 10, fontSize: 13 }} onClick={() => setView({ type: 'track', id: o.id })}>📍 Track order</button>
                 <button className="btn ghost" style={{ flex: 1, padding: 10, fontSize: 13 }} onClick={() => setView({ type: 'details', id: o.id })}>Order details</button>
               </div>
+              {o.stage >= 2 && o.stage < 4 && onAdvanceOrder && <button className="btn green" style={{ width: '100%', marginTop: 10 }} onClick={() => onAdvanceOrder(o.id, 4)}>Confirm receipt</button>}
             </div>
           );
         })}
