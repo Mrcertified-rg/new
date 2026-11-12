@@ -45,8 +45,8 @@ export default function AddProduct({ close, user, sellerAccount, onPublished }) 
       if (!file.type.startsWith('image/')) { setError('Choose image files for product photos.'); continue; }
       if (file.size > 15 * 1024 * 1024) { setError('Each photo must be smaller than 15 MB.'); continue; }
       try {
-        const { canvas } = await fileToCanvas(file, 1600);
-        const blob = await canvasToBlob(canvas, 0.86);
+        const { canvas } = await fileToCanvas(file, 2400);
+        const blob = await canvasToBlob(canvas, 0.92);
         const url = URL.createObjectURL(blob);
         objectUrls.current.push(url);
         const photo = { id: `${Date.now()}-${Math.random()}`, blob, url };

@@ -5,11 +5,15 @@ import { createProduct } from '../products/productservice.js';
 
 const CATEGORIES = ['Women', 'Men', 'Kids', 'Beauty', 'Shoes', 'Accessories', 'Home & Household', 'Services'];
 const ADJUSTMENTS = [
-  ['brightness', 'Brightness', -100, 100],
-  ['contrast', 'Contrast', -100, 100],
-  ['saturation', 'Color', -100, 100],
-  ['warmth', 'Warmth', -100, 100],
-  ['sharpness', 'Sharpness', 0, 100],
+  ['brightness', 'Exposure', -60, 60],
+  ['shadows', 'Shadows', 0, 70],
+  ['highlights', 'Highlights', 0, 70],
+  ['contrast', 'Contrast', -25, 35],
+  ['saturation', 'Color', -25, 35],
+  ['warmth', 'Temperature', -60, 60],
+  ['denoise', 'Noise reduction', 0, 70],
+  ['clarity', 'Clarity', 0, 50],
+  ['sharpness', 'Sharpen', 0, 45],
 ];
 
 export default function AddProductModal({ close, seller, sellerName, onCreated }) {
@@ -34,7 +38,7 @@ export default function AddProductModal({ close, seller, sellerName, onCreated }
         ratio: CROPS.find((option) => option.id === crop)?.ratio || null,
         adj: adjustments,
       });
-      setPreview(output.toDataURL('image/jpeg', 0.86));
+      setPreview(output.toDataURL('image/jpeg', 0.92));
       const pixels = readPixels(output);
       setQualityTips(analyzePhoto(pixels.data, pixels.width, pixels.height).tips);
     } catch (photoError) {
@@ -62,7 +66,7 @@ export default function AddProductModal({ close, seller, sellerName, onCreated }
     if (!file.type.startsWith('image/')) { setError('Choose a photo or a supported video.'); return; }
     if (file.size > 15 * 1024 * 1024) { setError('Choose an image smaller than 15 MB.'); return; }
     try {
-      const loaded = await fileToCanvas(file, 2000);
+      const loaded = await fileToCanvas(file, 2400);
       setVideoFile(null);
       setVideoPreview((oldUrl) => { if (oldUrl) URL.revokeObjectURL(oldUrl); return ''; });
       setSource(loaded.canvas);
@@ -94,7 +98,7 @@ export default function AddProductModal({ close, seller, sellerName, onCreated }
         turns,
         ratio: CROPS.find((option) => option.id === crop)?.ratio || null,
         adj: adjustments,
-      })) : null;
+      }), 0.92) : null;
       const product = await createProduct({
         sellerId: seller?.id,
         sellerName,
@@ -144,7 +148,7 @@ export default function AddProductModal({ close, seller, sellerName, onCreated }
           {source && <div className="apm-editor">
             <div className="apm-toolbar">
               <button type="button" className="btn ghost" onClick={() => setTurns((value) => value + 1)}>↻ Rotate</button>
-              <button type="button" className="btn ghost" onClick={() => { setAdjustments(autoEnhanceParams(readPixels(source).data)); }}>Auto enhance</button>
+              <button type="button" className="btn ghost" onClick={() => { setAdjustments(autoEnhanceParams(readPixels(source).data)); }}>Auto light</button>
             </div>
             <label className="apm-field"><span>Crop</span><select value={crop} onChange={(event) => setCrop(event.target.value)}>{CROPS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
             <details className="apm-adjustments">

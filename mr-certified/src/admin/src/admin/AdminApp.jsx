@@ -1,6 +1,6 @@
 // MC
 import React, { useEffect, useMemo, useState } from 'react';
-import { restoreAdmin, signInAdmin, hasSession, touchSession, signOutAdmin, adminEmail, IDLE_MINUTES } from './adminAuth.js';
+import { restoreAdmin, signInAdmin, hasSession, touchSession, signOutAdmin, adminEmail, onAdminSessionLost, IDLE_MINUTES } from './adminAuth.js';
 import { listAccounts, listOrders, getStats, setSellerStatus, listAudit, logAudit, mask, money, when } from './adminData.js';
 import './admin.css';
 
@@ -37,7 +37,12 @@ export default function AdminApp() {
   const [checking, setChecking] = useState(true); // asking Supabase if we are still signed in
   const [notice, setNotice] = useState('');
 
-  useEffect(() => { restoreAdmin().then((ok) => { setAuthed(ok); setChecking(false); }); }, []);
+  useEffect(() => {
+    restoreAdmin().then((r) => { setAuthed(r.ok); if (r.notice) setNotice(r.notice); setChecking(false); });
+  }, []);
+
+  // If the login ends (or someone else signs in in this browser) lock the console and say why.
+  useEffect(() => onAdminSessionLost((message) => { setNotice(message); setAuthed(false); }), []);
 
   // Lock after IDLE_MINUTES without a tap/key; closing the tab also ends the session.
   useEffect(() => {
@@ -61,8 +66,6 @@ function Gate({ onDone, notice }) {
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [showPw2, setShowPw2] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -87,8 +90,8 @@ function Gate({ onDone, notice }) {
         {setup && <p className="ad-sub">First run: this creates the only administrator login for this console.</p>}
         {notice && <p className="ad-note">{notice}</p>}
         <label>Email<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-        <label>Passphrase<span className="ad-password-field"><input type={showPw ? 'text' : 'password'} autoComplete={setup ? 'new-password' : 'current-password'} value={pw} onChange={(e) => setPw(e.target.value)} required /><button type="button" className="ad-password-toggle" onClick={() => setShowPw((visible) => !visible)} aria-label={showPw ? 'Hide passphrase' : 'Show passphrase'} aria-pressed={showPw} title={showPw ? 'Hide passphrase' : 'Show passphrase'}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path className="ad-eye-spark" d="M19 2v4m-2-2h4"/>{showPw && <path d="m4 4 16 16"/>}</svg></button></span></label>
-        {setup && <label>Repeat passphrase<span className="ad-password-field"><input type={showPw2 ? 'text' : 'password'} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} required /><button type="button" className="ad-password-toggle" onClick={() => setShowPw2((visible) => !visible)} aria-label={showPw2 ? 'Hide repeated passphrase' : 'Show repeated passphrase'} aria-pressed={showPw2} title={showPw2 ? 'Hide passphrase' : 'Show passphrase'}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path className="ad-eye-spark" d="M19 2v4m-2-2h4"/>{showPw2 && <path d="m4 4 16 16"/>}</svg></button></span></label>}
+        <label>Password<input type="password" autoComplete={setup ? 'new-password' : 'current-password'} value={pw} onChange={(e) => setPw(e.target.value)} required /></label>
+        {setup && <label>Repeat passphrase<input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} required /></label>}
         {err && <p className="ad-err" role="alert">{err}</p>}
         <button className="ad-btn gold" disabled={busy}>{busy ? 'Please wait…' : setup ? 'Create & enter' : 'Sign in'}</button>
       </form>
@@ -123,9 +126,14 @@ function Console({ onLock }) {
   // Reloads from Supabase on first open, on every Refresh click, and every 5 seconds.
   useEffect(() => {
     let alive = true;
-    Promise.all([listAccounts(), listOrders(), listAudit()])
-      .then(([a, o, l]) => { if (alive) { setAccounts(a); setOrders(o); setAudit(l); setLoadError(''); } })
-      .catch((e) => { if (alive) setLoadError(e.message || 'Could not load data.'); });
+    // each list loads on its own, so one problem (for example orders) never hides the others
+    Promise.allSettled([listAccounts(), listOrders(), listAudit()]).then(([a, o, l]) => {
+      if (!alive) return;
+      if (a.status === 'fulfilled') setAccounts(a.value);
+      if (o.status === 'fulfilled') setOrders(o.value);
+      if (l.status === 'fulfilled') setAudit(l.value);
+      setLoadError([a, o, l].filter((r) => r.status === 'rejected').map((r) => r.reason.message).join(' '));
+    });
     return () => { alive = false; };
   }, [tick]);
   const stats = useMemo(
@@ -230,7 +238,7 @@ function Console({ onLock }) {
           <div className="ad-security">
             <span>●</span>
             Admin session protected
-            <small>Demo authentication</small>
+            <small>Signed in with Supabase</small>
           </div>
 
           <button className="ad-logout" onClick={onLock}>
@@ -591,7 +599,7 @@ function Orders({ orders, stats }) {
       <div className="ad-grid">
         <Stat label="Orders" value={stats.orders} />
         <Stat label="Order volume" value={money(stats.volume)} />
-        <Stat label="Held in escrow" value={money(stats.escrow)} />
+        <Stat label="Awaiting delivery" value={money(stats.escrow)} />
       </div>
       <div className="ad-table">
         <table>
@@ -600,7 +608,7 @@ function Orders({ orders, stats }) {
             {orders.map((o) => (
               <tr key={o.id}><td>{when(o.at)}</td><td>#{String(o.id).slice(-6)}</td><td>{o.customer?.name}<div className="ad-sub">{o.customer?.email || o.customer?.phone}</div></td><td>{o.product} ({o.size})</td><td>{o.seller}</td><td>{o.qty}</td><td>{money(o.amount)}</td><td>{o.stageLabel}</td><td>{o.payment}</td></tr>
             ))}
-            {orders.length === 0 && <tr><td colSpan="9" className="ad-empty">No customer orders yet. Place one in the public app while signed in.</td></tr>}
+            {orders.length === 0 && <tr><td colSpan="9" className="ad-empty">No orders yet. They appear here as soon as a buyer checks out in the shop.</td></tr>}
           </tbody>
         </table>
       </div>

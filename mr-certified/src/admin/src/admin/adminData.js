@@ -9,7 +9,7 @@
  * All functions are async.
  * ---------------------------------------------------------------------------
  */
-import { supabase } from '../../../lib/supabase.js';
+import { adminClient as supabase } from './adminClient.js';
 
 export const money = (n) => 'KSh ' + Number(n || 0).toLocaleString('en-KE');
 export const when = (v) => (v ? new Date(v).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
@@ -69,9 +69,26 @@ export async function setSellerStatus(userId, status, reason = '') {
 }
 
 /* ----------------------------- transactions ----------------------------- */
-// Orders move to Supabase in a later step. Until then there is nothing to list.
+const STAGES = ['Placed', 'Packed', 'Shipped', 'Out for delivery', 'Delivered'];
+
+/** All orders placed in the shop (requires the orders migration). */
 export async function listOrders() {
-  return [];
+  const { data, error } = await supabase
+    .from('orders').select('*').order('created_at', { ascending: false }).limit(1000);
+  if (error) throw new Error('Could not load orders. Have you applied the orders migration in Supabase?');
+  return data.map((o) => ({
+    id: o.id,
+    at: o.created_at,
+    customer: { name: o.buyer_name, email: o.buyer_email, phone: o.buyer_phone },
+    product: o.product_name,
+    size: o.size,
+    seller: o.seller_name,
+    qty: o.qty,
+    amount: o.amount,
+    stage: o.stage,
+    stageLabel: STAGES[o.stage] || '—',
+    payment: o.stage >= 4 ? 'Completed' : 'Awaiting delivery',
+  }));
 }
 
 export function getStats(accounts, orders) {

@@ -5,12 +5,8 @@ import { mediaBg } from '../products/media.js';
 
 export default function Dashboard({ go, threads, orders = [], openModal, sellerName = 'Urban Kicks Kenya' }) {
   const sellerProducts = PRODUCTS.filter((product) => product.seller === sellerName);
-  const recentOrders = orders
-    .filter((order) => sellerProducts.some((product) => product.id === order.pid))
-    .slice(0, 3);
-  const pendingOrders = orders.filter((order) => (
-    sellerProducts.some((product) => product.id === order.pid) && order.stage < 2
-  )).length;
+  const recentOrders = orders.slice(0, 3);
+  const pendingOrders = orders.filter((order) => order.stage < 2).length;
 
   return (
     <React.Fragment>
@@ -75,7 +71,10 @@ export default function Dashboard({ go, threads, orders = [], openModal, sellerN
             <button type="button" className="seller-text-link" onClick={() => go('sellerorders')}>View all <span>›</span></button>
           </div>
           {recentOrders.length ? recentOrders.map((order) => {
-            const product = PRODUCTS.find((item) => item.id === order.pid);
+            const product = PRODUCTS.find((item) => item.id === order.pid) || {
+              name: order.product || 'Product',
+              g: ['#3a3a3a', '#1a1a1a'],
+            };
             return (
               <div className="seller-recent-order" key={order.id}>
                 <span className="seller-order-thumb" style={{ background: mediaBg(product, 145) }} />
