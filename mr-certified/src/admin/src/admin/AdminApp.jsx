@@ -66,6 +66,7 @@ function Gate({ onDone, notice }) {
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -90,7 +91,11 @@ function Gate({ onDone, notice }) {
         {setup && <p className="ad-sub">First run: this creates the only administrator login for this console.</p>}
         {notice && <p className="ad-note">{notice}</p>}
         <label>Email<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-        <label>Password<input type="password" autoComplete={setup ? 'new-password' : 'current-password'} value={pw} onChange={(e) => setPw(e.target.value)} required /></label>
+        <label>Password<div className="ad-password-field"><input type={showPw ? 'text' : 'password'} autoComplete={setup ? 'new-password' : 'current-password'} value={pw} onChange={(e) => setPw(e.target.value)} required /><button type="button" className="ad-password-toggle" onClick={() => setShowPw((visible) => !visible)} aria-label={showPw ? 'Hide password' : 'Show password'} aria-pressed={showPw} title={showPw ? 'Hide password' : 'Show password'}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {showPw ? <><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.7" /><path d="M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.7" /><path d="m3 3 18 18" /><path d="M10 10a2.8 2.8 0 0 0 4 4" /></> : <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="2.8" /></>}
+          </svg>
+        </button></div></label>
         {setup && <label>Repeat passphrase<input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} required /></label>}
         {err && <p className="ad-err" role="alert">{err}</p>}
         <button className="ad-btn gold" disabled={busy}>{busy ? 'Please wait…' : setup ? 'Create & enter' : 'Sign in'}</button>
